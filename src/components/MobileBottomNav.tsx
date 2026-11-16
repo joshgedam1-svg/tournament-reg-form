@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { UserPlus, Search } from 'lucide-react';
+import { UserPlus, Search, MessageCircle } from 'lucide-react';
 
 export default function MobileBottomNav() {
   const pathname = usePathname();
@@ -41,6 +41,18 @@ export default function MobileBottomNav() {
         </div>
         <span>Track Status</span>
       </Link>
+
+      <a
+        href="https://wa.me/919876543210?text=Hi%2C%20I%20need%20help%20with%20Cricket%20Auction%20League%20registration%20or%20payment"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex flex-col items-center gap-0.5 py-1 px-5 rounded-xl text-[10px] font-semibold text-slate-500 hover:text-slate-900 transition-colors"
+      >
+        <div className="p-1 rounded-md text-emerald-600">
+          <MessageCircle className="w-4 h-4" />
+        </div>
+        <span>Support</span>
+      </a>
     </nav>
   );
 }
