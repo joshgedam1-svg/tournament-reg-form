@@ -242,3 +242,4 @@ CREATE POLICY "Allow all activity logs" ON admin_activity_logs FOR ALL USING (tr
 
 DROP POLICY IF EXISTS "Allow all admin profiles" ON admin_profiles;
 CREATE POLICY "Allow all admin profiles" ON admin_profiles FOR ALL USING (true) WITH CHECK (true);
+

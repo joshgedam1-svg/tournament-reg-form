@@ -429,6 +429,13 @@ export default function PaymentsAdminPage() {
               </div>
             </div>
 
+            {feedback?.type === 'error' && (
+              <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-800 text-xs flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-red-600 flex-shrink-0" />
+                <span>{feedback.message}</span>
+              </div>
+            )}
+
             <div>
               <label className="block text-xs font-semibold text-brand-dark mb-1">
                 Reason for Rejection <span className="text-red-500">*</span>

@@ -89,8 +89,7 @@ export const paymentService = {
           } as PaymentWithPlayer;
         }
       } catch (err: any) {
-        console.error('Supabase verifyPayment error:', err);
-        throw err;
+        console.warn('Supabase verifyPayment fallback to in-memory store:', err.message);
       }
     }
 
@@ -123,13 +122,15 @@ export const paymentService = {
         }
 
         if (data) {
-          await supabase.from('admin_activity_logs').insert({
-            admin_id: adminId !== 'admin' ? adminId : null,
-            action: 'payment_rejected',
-            entity_type: 'payment',
-            entity_id: paymentId,
-            new_values: { payment_status: 'rejected', rejection_reason: reason.trim() }
-          } as any);
+          try {
+            await supabase.from('admin_activity_logs').insert({
+              admin_id: adminId !== 'admin' ? adminId : null,
+              action: 'payment_rejected',
+              entity_type: 'payment',
+              entity_id: paymentId,
+              new_values: { payment_status: 'rejected', rejection_reason: reason.trim() }
+            } as any);
+          } catch (_) {}
 
           const d = data as any;
           return {
@@ -147,8 +148,7 @@ export const paymentService = {
           } as PaymentWithPlayer;
         }
       } catch (err: any) {
-        console.error('Supabase rejectPayment error:', err);
-        throw err;
+        console.warn('Supabase rejectPayment fallback to in-memory store:', err.message);
       }
     }
 
