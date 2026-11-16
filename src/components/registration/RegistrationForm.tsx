@@ -114,6 +114,7 @@ export default function RegistrationForm({ settings: propSettings, initialSettin
       profile_photo_path: null,
       playing_role: 'batsman',
       batting_style: 'right_hand',
+      batting_position: 'top_order',
       bowling_arm: 'right_arm',
       bowling_type: 'medium',
       experience_level: '3_5_years',
@@ -136,6 +137,7 @@ export default function RegistrationForm({ settings: propSettings, initialSettin
 
   const selectedRole = watch('playing_role');
   const selectedBatting = watch('batting_style');
+  const selectedBattingPosition = watch('batting_position');
   const selectedArm = watch('bowling_arm');
   const selectedBowlingType = watch('bowling_type');
 
@@ -722,6 +724,36 @@ export default function RegistrationForm({ settings: propSettings, initialSettin
                   key={item.id}
                   type="button"
                   onClick={() => setValue('batting_style', item.id as any, { shouldValidate: true })}
+                  className={`px-4 py-2 rounded-full text-xs sm:text-sm font-medium transition-colors ${
+                    active
+                      ? 'bg-primary-green text-white shadow-xs'
+                      : 'bg-gray-100 text-brand-dark hover:bg-gray-200'
+                  }`}
+                >
+                  {item.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Batting Position Chips */}
+        <div>
+          <label className="block text-xs sm:text-sm font-semibold text-brand-dark mb-2">
+            Batting Position / Order <span className="text-red-500">*</span>
+          </label>
+          <div className="flex flex-wrap gap-2">
+            {[
+              { id: 'top_order', label: 'Top Order (Opening - 3)' },
+              { id: 'middle_order', label: 'Middle Order (4 - 6)' },
+              { id: 'lower_order', label: 'Finisher / Lower Order (7 - 11)' }
+            ].map(item => {
+              const active = (selectedBattingPosition || 'top_order') === item.id;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => setValue('batting_position', item.id as any, { shouldValidate: true })}
                   className={`px-4 py-2 rounded-full text-xs sm:text-sm font-medium transition-colors ${
                     active
                       ? 'bg-primary-green text-white shadow-xs'

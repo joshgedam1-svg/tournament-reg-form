@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 export const playingRoles = ['batsman', 'bowler', 'all_rounder', 'wicketkeeper'] as const;
 export const battingStyles = ['right_hand', 'left_hand'] as const;
+export const battingPositions = ['top_order', 'middle_order', 'lower_order'] as const;
 export const bowlingArms = ['right_arm', 'left_arm', 'do_not_bowl'] as const;
 export const bowlingTypes = ['fast', 'medium', 'spin', 'not_applicable'] as const;
 export const experienceLevels = ['beginner', '1_2_years', '3_5_years', '5_plus_years'] as const;
@@ -25,6 +26,7 @@ export const registrationSchema = z.object({
   // Step 3: Cricket Profile
   playing_role: z.enum(playingRoles, { message: 'Select a valid playing role' }),
   batting_style: z.enum(battingStyles, { message: 'Select your batting style' }),
+  batting_position: z.enum(battingPositions).optional().default('top_order'),
   bowling_arm: z.enum(bowlingArms, { message: 'Select your bowling arm' }),
   bowling_type: z.enum(bowlingTypes, { message: 'Select your bowling type' }),
 
