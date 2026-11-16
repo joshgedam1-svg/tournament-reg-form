@@ -155,88 +155,89 @@ export default function Navbar() {
 
       {/* Help & Support Modal */}
       {helpModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4 animate-in zoom-in-95 duration-150">
+        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+          <div className="relative w-full max-w-sm sm:max-w-md bg-white rounded-2xl p-5 sm:p-6 shadow-xl border border-slate-200 space-y-4 my-auto animate-in zoom-in-95 duration-150">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-full bg-light-green text-primary-green flex items-center justify-center">
-                  <HelpCircle className="w-5 h-5" />
+                <div className="w-8 h-8 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center">
+                  <HelpCircle className="w-4 h-4 text-primary-green" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-sm text-slate-900">Tournament Committee Helpdesk</h3>
-                  <p className="text-[11px] text-slate-400">Official Player Assistance & Support</p>
+                  <h3 className="font-semibold text-sm text-slate-900">Tournament Committee Helpdesk</h3>
+                  <p className="text-[11px] text-slate-500">Official Player Assistance</p>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => setHelpModalOpen(false)}
-                className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+                aria-label="Close modal"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
             <p className="text-xs text-slate-600 leading-relaxed">
-              Kisi bhi registration, UPI payment ya tournament rules se sambandhit jaankari ke liye seedha committee se sampark karein:
+              Registration, UPI payment ya tournament rules se sambandhit kisi bhi sawaal ke liye committee se sampark karein:
             </p>
 
-            <div className="space-y-2.5 pt-1">
+            <div className="space-y-2 pt-1">
               <a
                 href="tel:+919876543210"
-                className="flex items-center justify-between p-3 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200/80 transition-colors group"
+                className="flex items-center justify-between p-3 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-colors group"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-emerald-100 text-primary-green flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-lg bg-white border border-slate-200 text-slate-700 flex items-center justify-center">
                     <Phone className="w-4 h-4" />
                   </div>
                   <div>
-                    <span className="block text-[11px] text-slate-400 font-medium">Helpline Call</span>
-                    <span className="font-bold text-xs text-slate-800 group-hover:text-primary-green">+91 98765 43210</span>
+                    <span className="block text-[10px] text-slate-500 uppercase tracking-wider font-semibold">Phone Helpline</span>
+                    <span className="font-semibold text-xs text-slate-900">+91 98765 43210</span>
                   </div>
                 </div>
-                <span className="text-[11px] font-bold text-primary-green bg-light-green px-2.5 py-1 rounded-full">Call Now</span>
+                <span className="text-[11px] font-semibold text-slate-600 bg-white border border-slate-200 px-2.5 py-1 rounded-lg">Call</span>
               </a>
 
               <a
                 href="https://wa.me/919876543210?text=Hi%2C%20I%20need%20help%20with%20Cricket%20Auction%20League%20registration%20or%20payment"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center justify-between p-3 rounded-xl bg-emerald-50 hover:bg-emerald-100/70 border border-emerald-200 transition-colors group"
+                className="flex items-center justify-between p-3 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-colors group"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-[#25D366] text-white flex items-center justify-center">
-                    <MessageCircle className="w-4 h-4 fill-white" />
+                  <div className="w-8 h-8 rounded-lg bg-white border border-slate-200 text-primary-green flex items-center justify-center">
+                    <MessageCircle className="w-4 h-4" />
                   </div>
                   <div>
-                    <span className="block text-[11px] text-emerald-700 font-medium">WhatsApp Support</span>
-                    <span className="font-bold text-xs text-emerald-950">Instant Chat Available</span>
+                    <span className="block text-[10px] text-slate-500 uppercase tracking-wider font-semibold">WhatsApp Chat</span>
+                    <span className="font-semibold text-xs text-slate-900">Message Committee Desk</span>
                   </div>
                 </div>
-                <span className="text-[11px] font-bold text-white bg-[#25D366] px-2.5 py-1 rounded-full">Chat</span>
+                <span className="text-[11px] font-semibold text-primary-green bg-white border border-emerald-200 px-2.5 py-1 rounded-lg">Chat</span>
               </a>
 
               <a
                 href="mailto:support@cricketauctionleague.com"
-                className="flex items-center justify-between p-3 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200/80 transition-colors group"
+                className="flex items-center justify-between p-3 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-colors group"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-lg bg-white border border-slate-200 text-slate-700 flex items-center justify-center">
                     <Mail className="w-4 h-4" />
                   </div>
                   <div>
-                    <span className="block text-[11px] text-slate-400 font-medium">Email Support</span>
-                    <span className="font-bold text-xs text-slate-800 group-hover:text-blue-600">support@cricketauctionleague.com</span>
+                    <span className="block text-[10px] text-slate-500 uppercase tracking-wider font-semibold">Official Email</span>
+                    <span className="font-semibold text-xs text-slate-900">support@cricketauctionleague.com</span>
                   </div>
                 </div>
-                <span className="text-[11px] font-bold text-slate-600 bg-slate-200/80 px-2.5 py-1 rounded-full">Email</span>
+                <span className="text-[11px] font-semibold text-slate-600 bg-white border border-slate-200 px-2.5 py-1 rounded-lg">Email</span>
               </a>
             </div>
 
-            <div className="pt-2 text-center">
+            <div className="pt-2">
               <button
                 type="button"
                 onClick={() => setHelpModalOpen(false)}
-                className="w-full py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors"
+                className="w-full py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs transition-colors"
               >
                 Close
               </button>
