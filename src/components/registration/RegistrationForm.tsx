@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -28,7 +29,9 @@ import {
   HelpCircle,
   Phone,
   Mail,
-  MessageCircle
+  MessageCircle,
+  Eye,
+  X
 } from 'lucide-react';
 
 interface RegistrationFormProps {
@@ -65,8 +68,12 @@ export default function RegistrationForm({ settings: propSettings, initialSettin
   const cleanPhone = supportPhone.replace(/\s+/g, '');
   const cleanWhatsapp = (settings.support_whatsapp || settings.support_phone || '919876543210').replace(/[^0-9]/g, '');
 
+  const [mounted, setMounted] = useState(false);
+  const [viewingImage, setViewingImage] = useState<{ url: string; title: string } | null>(null);
+
   // Client-side instant fetch to guarantee 100% fresh settings on mount
   React.useEffect(() => {
+    setMounted(true);
     let isMounted = true;
 
     // Check localStorage first for instant client-side persistence
@@ -85,15 +92,43 @@ export default function RegistrationForm({ settings: propSettings, initialSettin
         const res = await fetch('/api/public/settings', { cache: 'no-store' });
         const json = await res.json();
         if (isMounted && json.success && json.data) {
-          setSettings(prev => ({ ...prev, ...json.data }));
+          let localSettings: any = null;
+          try {
+            const local = localStorage.getItem('cal_tournament_settings');
+            if (local) localSettings = JSON.parse(local);
+          } catch (e) {}
+
+          setSettings(prev => {
+            const next = { ...prev, ...json.data };
+            if (localSettings) {
+              for (const [k, v] of Object.entries(localSettings)) {
+                if (v !== undefined && v !== null && v !== '') {
+                  (next as any)[k] = v;
+                }
+              }
+            }
+            return next;
+          });
         }
       } catch (err) {
         // Fallback to initial settings
       }
     }
     refreshSettings();
+
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'cal_tournament_settings' && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          setSettings(prev => ({ ...prev, ...parsed }));
+        } catch (err) {}
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+
     return () => {
       isMounted = false;
+      window.removeEventListener('storage', handleStorageChange);
     };
   }, []);
   const [copiedUpi, setCopiedUpi] = useState(false);
@@ -367,7 +402,8 @@ export default function RegistrationForm({ settings: propSettings, initialSettin
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 max-w-3xl mx-auto pb-16">
+    <>
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 max-w-3xl mx-auto pb-16">
       {/* ============================================================================== */}
       {/* PROPER TOURNAMENT HERO BANNER */}
       {/* ============================================================================== */}
@@ -576,18 +612,36 @@ export default function RegistrationForm({ settings: propSettings, initialSettin
               Player Profile Photo <span className="text-brand-muted text-xs font-normal">(Optional, max 3MB)</span>
             </label>
             {photoPreview ? (
-              <div className="p-3 bg-gray-50 border border-brand-border rounded-xl flex items-center justify-between gap-3">
+              <div className="p-3 bg-gray-50 border border-brand-border rounded-xl flex items-center justify-between gap-3 shadow-2xs">
                 <div className="flex items-center gap-3 min-w-0">
-                  <img
-                    src={photoPreview}
-                    alt="Player Profile Preview"
-                    className="w-14 h-14 rounded-lg object-cover flex-shrink-0 border border-gray-200"
-                  />
+                  <div
+                    onClick={() => setViewingImage({ url: photoPreview, title: 'Player Profile Photo' })}
+                    className="relative group cursor-pointer shrink-0 rounded-lg overflow-hidden"
+                    title="Click to view full photo"
+                  >
+                    <img
+                      src={photoPreview}
+                      alt="Player Profile Preview"
+                      className="w-14 h-14 rounded-lg object-cover border border-gray-200 group-hover:scale-105 transition-transform"
+                    />
+                    <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white">
+                      <Eye className="w-4 h-4 drop-shadow-sm" />
+                    </div>
+                  </div>
                   <div className="min-w-0">
                     <p className="text-xs sm:text-sm font-medium text-brand-dark truncate">{photoName}</p>
-                    <span className="inline-flex items-center gap-1 text-[11px] text-primary-green font-semibold mt-0.5">
-                      <CheckCircle2 className="w-3.5 h-3.5" /> Photo Attached
-                    </span>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className="inline-flex items-center gap-1 text-[11px] text-primary-green font-semibold">
+                        <CheckCircle2 className="w-3.5 h-3.5" /> Photo Attached
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setViewingImage({ url: photoPreview, title: 'Player Profile Photo' })}
+                        className="text-[11px] text-slate-500 hover:text-primary-green underline font-medium flex items-center gap-0.5"
+                      >
+                        <Eye className="w-3 h-3" /> View Photo
+                      </button>
+                    </div>
                   </div>
                 </div>
                 <button
@@ -1048,16 +1102,34 @@ export default function RegistrationForm({ settings: propSettings, initialSettin
             {screenshotPreview ? (
               <div className="p-3 bg-white border border-brand-border rounded-xl flex items-center justify-between gap-3 shadow-xs">
                 <div className="flex items-center gap-3 min-w-0">
-                  <img
-                    src={screenshotPreview}
-                    alt="Payment receipt preview"
-                    className="w-12 h-14 rounded-lg object-cover flex-shrink-0 border border-gray-200"
-                  />
+                  <div
+                    onClick={() => setViewingImage({ url: screenshotPreview, title: 'Payment Receipt Screenshot' })}
+                    className="relative group cursor-pointer shrink-0 rounded-lg overflow-hidden"
+                    title="Click to view full receipt"
+                  >
+                    <img
+                      src={screenshotPreview}
+                      alt="Payment receipt preview"
+                      className="w-12 h-14 rounded-lg object-cover border border-gray-200 group-hover:scale-105 transition-transform"
+                    />
+                    <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white">
+                      <Eye className="w-4 h-4 drop-shadow-sm" />
+                    </div>
+                  </div>
                   <div className="min-w-0">
                     <p className="text-xs sm:text-sm font-medium text-brand-dark truncate">{screenshotName}</p>
-                    <span className="inline-flex items-center gap-1 text-[11px] text-primary-green font-semibold mt-0.5">
-                      <CheckCircle2 className="w-3.5 h-3.5" /> Screenshot Attached
-                    </span>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className="inline-flex items-center gap-1 text-[11px] text-primary-green font-semibold">
+                        <CheckCircle2 className="w-3.5 h-3.5" /> Screenshot Attached
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setViewingImage({ url: screenshotPreview, title: 'Payment Receipt Screenshot' })}
+                        className="text-[11px] text-slate-500 hover:text-primary-green underline font-medium flex items-center gap-0.5"
+                      >
+                        <Eye className="w-3 h-3" /> View Large Receipt
+                      </button>
+                    </div>
                   </div>
                 </div>
                 <button
@@ -1191,5 +1263,56 @@ export default function RegistrationForm({ settings: propSettings, initialSettin
         </p>
       </div>
     </form>
+
+    {/* Full-Screen Image Lightbox Modal for Receipt & Photo Previews */}
+    {mounted && viewingImage && typeof document !== 'undefined' && createPortal(
+      <div
+        className="fixed inset-0 z-[99999] bg-slate-950/80 backdrop-blur-sm overflow-y-auto p-4 sm:p-6 flex min-h-screen items-center justify-center animate-in fade-in duration-150"
+        onClick={(e) => {
+          if (e.target === e.currentTarget) setViewingImage(null);
+        }}
+      >
+        <div className="relative w-full max-w-lg bg-white rounded-3xl p-5 sm:p-6 shadow-2xl border border-slate-200 space-y-4 my-auto animate-in zoom-in-95 duration-150">
+          {/* Header */}
+          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+            <div className="flex items-center gap-2">
+              <Eye className="w-4 h-4 text-primary-green" />
+              <h3 className="font-bold text-sm text-slate-900">{viewingImage.title}</h3>
+            </div>
+            <button
+              type="button"
+              onClick={() => setViewingImage(null)}
+              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+              aria-label="Close"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          {/* Image Container with Safe Max Height */}
+          <div className="bg-slate-50 rounded-2xl p-2 border border-slate-200 flex items-center justify-center overflow-hidden max-h-[70vh]">
+            <img
+              src={viewingImage.url}
+              alt={viewingImage.title}
+              className="w-auto h-auto max-h-[66vh] max-w-full object-contain rounded-xl shadow-xs"
+            />
+          </div>
+
+          <p className="text-[11px] text-slate-400 text-center font-medium">
+            Tap anywhere outside or click Close to dismiss preview
+          </p>
+
+          <button
+            type="button"
+            onClick={() => setViewingImage(null)}
+            className="w-full py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs transition-colors"
+          >
+            Close Preview
+          </button>
+        </div>
+      </div>,
+      document.body
+    )}
+  </>
   );
 }

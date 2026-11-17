@@ -44,12 +44,38 @@ export default function Navbar() {
       .then(r => r.json())
       .then(json => {
         if (json.success && json.data) {
-          if (json.data.support_phone) setSupportPhone(json.data.support_phone);
-          if (json.data.support_whatsapp) setSupportWhatsapp(json.data.support_whatsapp);
-          if (json.data.support_email) setSupportEmail(json.data.support_email);
+          let localSettings: any = null;
+          try {
+            const local = localStorage.getItem('cal_tournament_settings');
+            if (local) localSettings = JSON.parse(local);
+          } catch (e) {}
+
+          const phone = localSettings?.support_phone || json.data.support_phone;
+          const wa = localSettings?.support_whatsapp || json.data.support_whatsapp;
+          const email = localSettings?.support_email || json.data.support_email;
+
+          if (phone) setSupportPhone(phone);
+          if (wa) setSupportWhatsapp(wa);
+          if (email) setSupportEmail(email);
         }
       })
       .catch(() => {});
+
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'cal_tournament_settings' && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          if (parsed.support_phone) setSupportPhone(parsed.support_phone);
+          if (parsed.support_whatsapp) setSupportWhatsapp(parsed.support_whatsapp);
+          if (parsed.support_email) setSupportEmail(parsed.support_email);
+        } catch (err) {}
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
   }, []);
 
   const cleanWhatsapp = (supportWhatsapp || supportPhone || '919876543210').replace(/[^0-9]/g, '');

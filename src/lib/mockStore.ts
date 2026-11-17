@@ -1,6 +1,10 @@
+import fs from 'fs';
+import path from 'path';
 import { PlayerWithPayment, PlayingRole, RegistrationStatus } from '@/types/player';
 import { PaymentWithPlayer, PaymentStatus } from '@/types/payment';
 import { PublicTournamentSettings, TournamentSettingsRow } from '@/types/settings';
+
+const PERSISTENT_SETTINGS_FILE = path.join(process.cwd(), '.mock-settings.json');
 
 // Global singleton in-memory store for demo/development when live Supabase is not yet connected
 interface MockDatabaseState {
@@ -229,12 +233,31 @@ const initialPaymentsList: PaymentWithPlayer[] = initialPlayers.map(p => ({
   }
 }));
 
+function loadDiskSettings(): TournamentSettingsRow {
+  try {
+    if (fs.existsSync(PERSISTENT_SETTINGS_FILE)) {
+      const raw = fs.readFileSync(PERSISTENT_SETTINGS_FILE, 'utf8');
+      const data = JSON.parse(raw);
+      if (data && typeof data === 'object') {
+        return { ...initialSettings, ...data };
+      }
+    }
+  } catch (e) {}
+  return { ...initialSettings };
+}
+
+function saveDiskSettings(settings: TournamentSettingsRow) {
+  try {
+    fs.writeFileSync(PERSISTENT_SETTINGS_FILE, JSON.stringify(settings, null, 2), 'utf8');
+  } catch (e) {}
+}
+
 // Use globalThis so state persists across hot reload in dev
 const globalMock = globalThis as unknown as { __MOCK_DB__: MockDatabaseState };
 
 if (!globalMock.__MOCK_DB__) {
   globalMock.__MOCK_DB__ = {
-    settings: { ...initialSettings },
+    settings: loadDiskSettings(),
     players: [...initialPlayers],
     payments: [...initialPaymentsList],
     activityLogs: [
@@ -274,6 +297,7 @@ export const mockStore = {
       ...data,
       updated_at: new Date().toISOString()
     };
+    saveDiskSettings(globalMock.__MOCK_DB__.settings);
     return { ...globalMock.__MOCK_DB__.settings };
   },
 
