@@ -2211,7 +2211,7 @@ export default function PlayersAdminPage() {
                       UTR: {selectedPlayer.payment?.utr_number || 'N/A'}
                     </span>
                     <span className="text-[11px] text-slate-500">
-                      Amount: ₹{selectedPlayer.payment?.amount || 500} • UPI
+                      Amount: ₹{selectedPlayer.payment?.amount || entryFee} • UPI
                     </span>
                   </div>
                   {selectedPlayer.payment?.screenshot_path && (

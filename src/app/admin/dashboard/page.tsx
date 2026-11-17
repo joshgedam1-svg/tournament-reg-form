@@ -187,7 +187,7 @@ export default function AdminDashboardPage() {
             </span>
           </div>
           <p className="text-[11px] text-brand-muted mt-1 truncate">
-            Confirmed ₹500 fee ledger records
+            Confirmed official fee ledger records
           </p>
         </div>
 

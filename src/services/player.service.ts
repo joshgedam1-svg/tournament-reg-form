@@ -253,7 +253,7 @@ export const playerService = {
           const p = player as any;
           await supabase.from('payments').insert({
             player_id: p.id,
-            amount: playerData.amount || 500,
+            amount: playerData.amount || 200,
             currency: 'INR',
             payment_method: 'UPI',
             utr_number: playerData.utr_number || `MANUAL-${Date.now()}`.substring(0, 12),

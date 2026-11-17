@@ -111,7 +111,7 @@ export const registrationService = {
           .from('payments')
           .insert({
             player_id: p.id,
-            amount: validated.amount || settings.registration_fee || 500,
+            amount: validated.amount || settings.registration_fee || 200,
             currency: 'INR',
             payment_method: 'UPI',
             utr_number: validated.utr_number.trim(),

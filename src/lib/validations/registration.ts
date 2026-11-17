@@ -46,12 +46,12 @@ export const registrationSchema = z.object({
   // Step 6: Payment Info
   utr_number: z.string().regex(/^\d{12}$/, 'UTR number must be exactly 12 numeric digits'),
   screenshot_path: z.string().min(1, 'Payment screenshot is required'),
-  amount: z.number().int().positive().default(500),
+  amount: z.number().int().positive().default(200),
 
   // Step 7: Declarations
   confirm_accuracy: z.boolean().refine(val => val === true, 'You must confirm that your details are accurate'),
   accept_rules: z.boolean().refine(val => val === true, 'You must agree to tournament rules'),
-  confirm_payment: z.boolean().refine(val => val === true, 'You must confirm that ₹500 was paid via UPI')
+  confirm_payment: z.boolean().refine(val => val === true, 'You must confirm that the entry fee was paid via UPI')
 });
 
 export type RegistrationFormData = z.infer<typeof registrationSchema>;
