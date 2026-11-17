@@ -421,8 +421,9 @@ export default function RegistrationForm({ settings: propSettings, initialSettin
                 <Trophy className="w-3.5 h-3.5" />
                 <span>Official Tournament</span>
               </span>
-              <span className="px-2.5 py-0.5 rounded-full text-[10px] sm:text-xs font-bold bg-white/20 backdrop-blur-md text-white border border-white/20">
-                ₹{settings.registration_fee} Fee
+              <span className="px-3.5 py-1 rounded-full text-xs sm:text-sm font-extrabold bg-amber-400 text-slate-950 shadow-md border border-amber-300 flex items-center gap-1.5 animate-in zoom-in-95">
+                <span className="uppercase text-[10px] font-black tracking-wide text-slate-900">Entry Fee:</span>
+                <span className="text-sm sm:text-base font-black">₹{settings.registration_fee}</span>
               </span>
               {endDate && (
                 <span className="px-2.5 py-0.5 rounded-full text-[10px] sm:text-xs font-bold bg-amber-400/25 text-amber-300 border border-amber-400/30 flex items-center gap-1">
@@ -958,18 +959,42 @@ export default function RegistrationForm({ settings: propSettings, initialSettin
       {/* SECTION 4: REGISTRATION PAYMENT (₹500 UPI) */}
       {/* ============================================================================== */}
       <div className="bg-white border border-brand-border rounded-2xl p-5 sm:p-7 shadow-xs space-y-5">
-        <div className="flex items-center justify-between pb-2.5 border-b border-gray-100">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-gray-100 gap-2.5">
           <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-full bg-primary-green text-white flex items-center justify-center font-bold text-xs shadow-xs">
+            <div className="w-8 h-8 rounded-xl bg-primary-green text-white flex items-center justify-center font-black text-sm shadow-xs">
               4
             </div>
-            <h2 className="font-bold text-base text-brand-dark uppercase tracking-wide">
-              Registration Payment
-            </h2>
+            <div>
+              <h2 className="font-bold text-base text-brand-dark uppercase tracking-wide">
+                Registration Payment
+              </h2>
+              <p className="text-[11px] text-brand-muted">Scan QR or transfer entry fee via any UPI app</p>
+            </div>
           </div>
-          <span className="px-3.5 py-1 rounded-full bg-light-green text-primary-green font-bold text-sm border border-primary-green/20">
-            ₹{settings.registration_fee}
-          </span>
+          <div className="inline-flex items-center gap-2 bg-gradient-to-r from-emerald-50 to-green-100 border-2 border-primary-green/40 px-4 py-1.5 rounded-2xl shadow-xs self-start sm:self-auto">
+            <span className="text-xs uppercase font-extrabold text-emerald-900 tracking-wider">Fee to Pay:</span>
+            <span className="text-2xl sm:text-3xl font-black text-primary-green font-mono tracking-tight">
+              ₹{settings.registration_fee}
+            </span>
+          </div>
+        </div>
+
+        {/* Prominent Highlighted Amount Banner */}
+        <div className="bg-gradient-to-r from-emerald-600 via-emerald-700 to-primary-green rounded-2xl p-4 sm:p-5 text-white shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="space-y-1">
+            <span className="text-[10px] sm:text-xs uppercase font-bold tracking-widest text-emerald-200 block">
+              Official Tournament Entry Fee
+            </span>
+            <p className="text-sm font-semibold text-white/90">
+              Pay exactly <span className="font-black text-amber-300 underline underline-offset-2">₹{settings.registration_fee}</span> to confirm your player docket registration.
+            </p>
+          </div>
+          <div className="bg-white/10 backdrop-blur-md border border-white/25 px-5 py-2.5 rounded-2xl text-center shrink-0 self-start sm:self-auto">
+            <span className="text-[10px] uppercase font-bold tracking-wider text-emerald-100 block">Total Payable</span>
+            <span className="text-3xl sm:text-4xl font-black font-mono text-amber-300 drop-shadow-sm">
+              ₹{settings.registration_fee}
+            </span>
+          </div>
         </div>
 
         {/* Payment Card with QR & UPI ID */}

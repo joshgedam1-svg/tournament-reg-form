@@ -131,7 +131,12 @@ export default function QRCodeDisplay({
                   <h3 className="font-bold text-sm text-slate-900">
                     {customQrPath ? 'Official Merchant Payment QR' : 'Official UPI Payment QR'}
                   </h3>
-                  <p className="text-[11px] text-slate-500">Scan & Pay ₹{amount} Registration Fee</p>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className="text-[11px] text-slate-500">Scan & Pay:</span>
+                    <span className="text-xs font-black text-emerald-800 bg-emerald-100 border border-emerald-300 px-2 py-0.5 rounded-md">
+                      ₹{amount}
+                    </span>
+                  </div>
                 </div>
               </div>
               <button

@@ -47,191 +47,34 @@ const initialSettings: TournamentSettingsRow = {
   updated_at: new Date().toISOString()
 };
 
-const initialPlayers: PlayerWithPayment[] = [
-  {
-    id: 'a1111111-1111-1111-1111-111111111111',
-    registration_id: 'CAL-2026-000001',
-    full_name: 'Rohit Sharma',
-    email: 'rohit.sharma@example.com',
-    mobile: '+91 98765 43210',
-    date_of_birth: '1998-04-30',
-    city: 'Mumbai',
-    address: 'A-402, Sea Green Heights, Shivaji Park Lane, Dadar West, Mumbai 400028',
-    profile_photo_path: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&auto=format&fit=crop&q=80',
-    playing_role: 'batsman',
-    batting_style: 'right_hand',
-    bowling_arm: 'right_arm',
-    bowling_type: 'spin',
-    experience_level: '5_plus_years',
-    previous_team_name: 'Shivaji Park Strikers',
-    previous_captain_name: 'Pravin Tambe',
-    previous_tournament: true,
-    previous_tournament_name: 'Mumbai Premier League 2024',
-    additional_information: 'Top run scorer in local T20 cup with 342 runs in 7 innings at 148.5 strike rate.',
-    emergency_contact_name: 'Suresh Sharma',
-    emergency_relationship: 'Father',
-    emergency_mobile: '+91 98765 11223',
-    registration_status: 'approved',
-    rejection_reason: null,
-    created_at: new Date(Date.now() - 86400000 * 2).toISOString(),
-    updated_at: new Date(Date.now() - 86400000 * 2).toISOString(),
-    payment: {
-      id: 'p1111111-1111-1111-1111-111111111111',
-      amount: 500,
-      currency: 'INR',
-      payment_method: 'UPI',
-      utr_number: '403928174629',
-      screenshot_path: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=600&auto=format&fit=crop&q=80',
-      payment_status: 'verified',
-      rejection_reason: null,
-      verified_at: new Date(Date.now() - 86400000).toISOString()
+const initialPlayers: PlayerWithPayment[] = [];
+
+const PERSISTENT_PLAYERS_FILE = path.join(process.cwd(), '.mock-players.json');
+
+function loadDiskPlayers(): { players: PlayerWithPayment[]; payments: PaymentWithPlayer[] } {
+  try {
+    if (fs.existsSync(PERSISTENT_PLAYERS_FILE)) {
+      const raw = fs.readFileSync(PERSISTENT_PLAYERS_FILE, 'utf8');
+      const data = JSON.parse(raw);
+      if (data && Array.isArray(data.players)) {
+        return {
+          players: data.players,
+          payments: Array.isArray(data.payments) ? data.payments : []
+        };
+      }
     }
-  },
-  {
-    id: 'b2222222-2222-2222-2222-222222222222',
-    registration_id: 'CAL-2026-000002',
-    full_name: 'Jasprit Bumrah',
-    email: 'jasprit.b@example.com',
-    mobile: '+91 98111 22334',
-    date_of_birth: '1999-12-06',
-    city: 'Ahmedabad',
-    address: 'B-12, Heritage Enclave, Drive-In Road, Ahmedabad 380054',
-    profile_photo_path: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80',
-    playing_role: 'bowler',
-    batting_style: 'right_hand',
-    bowling_arm: 'right_arm',
-    bowling_type: 'fast',
-    experience_level: '5_plus_years',
-    previous_team_name: 'Gujarat Lions Club',
-    previous_captain_name: 'Parthiv Patel',
-    previous_tournament: true,
-    previous_tournament_name: 'Gujarat T20 Trophy',
-    additional_information: 'Right-arm express pacer with yorker accuracy and economy under 6.5 in death overs.',
-    emergency_contact_name: 'Daljit Kaur',
-    emergency_relationship: 'Mother',
-    emergency_mobile: '+91 98111 99887',
-    registration_status: 'under_review',
-    rejection_reason: null,
-    created_at: new Date(Date.now() - 86400000).toISOString(),
-    updated_at: new Date(Date.now() - 86400000).toISOString(),
-    payment: {
-      id: 'p2222222-2222-2222-2222-222222222222',
-      amount: 500,
-      currency: 'INR',
-      payment_method: 'UPI',
-      utr_number: '403928174630',
-      screenshot_path: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=600&auto=format&fit=crop&q=80',
-      payment_status: 'pending_verification',
-      rejection_reason: null,
-      verified_at: null
-    }
-  },
-  {
-    id: 'c3333333-3333-3333-3333-333333333333',
-    registration_id: 'CAL-2026-000003',
-    full_name: 'Ravindra Jadeja',
-    email: 'ravindra.j@example.com',
-    mobile: '+91 98222 33445',
-    date_of_birth: '1997-08-15',
-    city: 'Rajkot',
-    address: 'Rajkot Cricket Academy Campus, Kalawad Road, Rajkot 360005',
-    profile_photo_path: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
-    playing_role: 'all_rounder',
-    batting_style: 'left_hand',
-    bowling_arm: 'left_arm',
-    bowling_type: 'spin',
-    experience_level: '5_plus_years',
-    previous_team_name: 'Saurashtra Stars',
-    previous_captain_name: 'Jaydev Unadkat',
-    previous_tournament: true,
-    previous_tournament_name: 'Saurashtra Premier Cup',
-    additional_information: 'Left-arm orthodox spinner and hard-hitting middle order batsman, elite fielding stats.',
-    emergency_contact_name: 'Anirudh Jadeja',
-    emergency_relationship: 'Father',
-    emergency_mobile: '+91 98222 88776',
-    registration_status: 'approved',
-    rejection_reason: null,
-    created_at: new Date(Date.now() - 3600000 * 8).toISOString(),
-    updated_at: new Date(Date.now() - 3600000 * 8).toISOString(),
-    payment: {
-      id: 'p3333333-3333-3333-3333-333333333333',
-      amount: 500,
-      currency: 'INR',
-      payment_method: 'UPI',
-      utr_number: '403928174631',
-      screenshot_path: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=600&auto=format&fit=crop&q=80',
-      payment_status: 'verified',
-      rejection_reason: null,
-      verified_at: new Date(Date.now() - 3600000 * 4).toISOString()
-    }
-  },
-  {
-    id: 'd4444444-4444-4444-4444-444444444444',
-    registration_id: 'CAL-2026-000004',
-    full_name: 'Rishabh Pant',
-    email: 'rishabh.p@example.com',
-    mobile: '+91 98333 44556',
-    date_of_birth: '2001-10-04',
-    city: 'Delhi',
-    address: 'House 14, Roorkee Road, Civil Lines, Delhi 110054',
-    profile_photo_path: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=400&auto=format&fit=crop&q=80',
-    playing_role: 'wicketkeeper',
-    batting_style: 'left_hand',
-    bowling_arm: 'do_not_bowl',
-    bowling_type: 'not_applicable',
-    experience_level: '3_5_years',
-    previous_team_name: 'Delhi Challengers',
-    previous_captain_name: 'Ishant Sharma',
-    previous_tournament: true,
-    previous_tournament_name: 'Delhi Club Championship',
-    additional_information: 'Aggressive left-handed wicketkeeper batsman, 28 dismissals and 410 runs last season.',
-    emergency_contact_name: 'Saroj Pant',
-    emergency_relationship: 'Mother',
-    emergency_mobile: '+91 98333 77665',
-    registration_status: 'under_review',
-    rejection_reason: null,
-    created_at: new Date(Date.now() - 3600000 * 2).toISOString(),
-    updated_at: new Date(Date.now() - 3600000 * 2).toISOString(),
-    payment: {
-      id: 'p4444444-4444-4444-4444-444444444444',
-      amount: 500,
-      currency: 'INR',
-      payment_method: 'UPI',
-      utr_number: '403928174632',
-      screenshot_path: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=600&auto=format&fit=crop&q=80',
-      payment_status: 'pending_verification',
-      rejection_reason: null,
-      verified_at: null
-    }
-  }
-];
+  } catch (e) {}
+  return { players: [], payments: [] };
+}
+
+function saveDiskPlayers(players: PlayerWithPayment[], payments: PaymentWithPlayer[]) {
+  try {
+    fs.writeFileSync(PERSISTENT_PLAYERS_FILE, JSON.stringify({ players, payments }, null, 2), 'utf8');
+  } catch (e) {}
+}
 
 // Rebuild initial payments with player info
-const initialPaymentsList: PaymentWithPlayer[] = initialPlayers.map(p => ({
-  id: p.payment!.id,
-  player_id: p.id,
-  amount: p.payment!.amount,
-  currency: p.payment!.currency,
-  payment_method: p.payment!.payment_method,
-  utr_number: p.payment!.utr_number,
-  screenshot_path: p.payment!.screenshot_path,
-  payment_status: p.payment!.payment_status,
-  rejection_reason: p.payment!.rejection_reason,
-  verified_by: null,
-  verified_at: p.payment!.verified_at,
-  created_at: p.created_at,
-  updated_at: p.updated_at,
-  player: {
-    id: p.id,
-    registration_id: p.registration_id,
-    full_name: p.full_name,
-    email: p.email,
-    mobile: p.mobile,
-    playing_role: p.playing_role,
-    city: p.city,
-    profile_photo_path: p.profile_photo_path
-  }
-}));
+const initialPaymentsList: PaymentWithPlayer[] = [];
 
 function loadDiskSettings(): TournamentSettingsRow {
   try {
@@ -255,11 +98,13 @@ function saveDiskSettings(settings: TournamentSettingsRow) {
 // Use globalThis so state persists across hot reload in dev
 const globalMock = globalThis as unknown as { __MOCK_DB__: MockDatabaseState };
 
+const diskPlayersData = loadDiskPlayers();
+
 if (!globalMock.__MOCK_DB__) {
   globalMock.__MOCK_DB__ = {
     settings: loadDiskSettings(),
-    players: [...initialPlayers],
-    payments: [...initialPaymentsList],
+    players: diskPlayersData.players,
+    payments: diskPlayersData.payments,
     activityLogs: [
       {
         id: 'log-1',
@@ -454,6 +299,7 @@ export const mockStore = {
 
     globalMock.__MOCK_DB__.players.unshift(newPlayer);
     globalMock.__MOCK_DB__.payments.unshift(newPayment);
+    saveDiskPlayers(globalMock.__MOCK_DB__.players, globalMock.__MOCK_DB__.payments);
 
     return { player: newPlayer, payment: newPayment };
   },
@@ -593,6 +439,7 @@ export const mockStore = {
 
     const removed = globalMock.__MOCK_DB__.players.splice(pIndex, 1)[0];
     globalMock.__MOCK_DB__.payments = globalMock.__MOCK_DB__.payments.filter(pay => pay.player_id !== playerId);
+    saveDiskPlayers(globalMock.__MOCK_DB__.players, globalMock.__MOCK_DB__.payments);
 
     globalMock.__MOCK_DB__.activityLogs.unshift({
       id: `log-${Date.now()}`,
@@ -614,6 +461,7 @@ export const mockStore = {
 
     globalMock.__MOCK_DB__.players = globalMock.__MOCK_DB__.players.filter(p => !idSet.has(p.id));
     globalMock.__MOCK_DB__.payments = globalMock.__MOCK_DB__.payments.filter(pay => !idSet.has(pay.player_id));
+    saveDiskPlayers(globalMock.__MOCK_DB__.players, globalMock.__MOCK_DB__.payments);
 
     const deletedCount = beforeCount - globalMock.__MOCK_DB__.players.length;
 
@@ -635,6 +483,7 @@ export const mockStore = {
     const count = globalMock.__MOCK_DB__.players.length;
     globalMock.__MOCK_DB__.players = [];
     globalMock.__MOCK_DB__.payments = [];
+    saveDiskPlayers([], []);
 
     globalMock.__MOCK_DB__.activityLogs.unshift({
       id: `log-${Date.now()}`,
@@ -718,6 +567,7 @@ export const mockStore = {
 
     globalMock.__MOCK_DB__.players.unshift(newPlayer);
     globalMock.__MOCK_DB__.payments.unshift(newPayment);
+    saveDiskPlayers(globalMock.__MOCK_DB__.players, globalMock.__MOCK_DB__.payments);
 
     globalMock.__MOCK_DB__.activityLogs.unshift({
       id: `log-${Date.now()}`,
