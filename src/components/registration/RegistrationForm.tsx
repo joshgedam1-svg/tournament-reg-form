@@ -93,23 +93,11 @@ export default function RegistrationForm({ settings: propSettings, initialSettin
         const res = await fetch('/api/public/settings', { cache: 'no-store' });
         const json = await res.json();
         if (isMounted && json.success && json.data) {
-          let localSettings: any = null;
+          // Server database is the single source of truth
+          setSettings(json.data);
           try {
-            const local = localStorage.getItem('cal_tournament_settings');
-            if (local) localSettings = JSON.parse(local);
+            localStorage.setItem('cal_tournament_settings', JSON.stringify(json.data));
           } catch (e) {}
-
-          setSettings(prev => {
-            const next = { ...prev, ...json.data };
-            if (localSettings) {
-              for (const [k, v] of Object.entries(localSettings)) {
-                if (v !== undefined && v !== null && v !== '') {
-                  (next as any)[k] = v;
-                }
-              }
-            }
-            return next;
-          });
         }
       } catch (err) {
         // Fallback to initial settings
@@ -121,7 +109,7 @@ export default function RegistrationForm({ settings: propSettings, initialSettin
       if (e.key === 'cal_tournament_settings' && e.newValue) {
         try {
           const parsed = JSON.parse(e.newValue);
-          setSettings(prev => ({ ...prev, ...parsed }));
+          setSettings(parsed);
         } catch (err) {}
       }
     };

@@ -123,14 +123,18 @@ export const settingsService = {
             .single();
 
           if (!error && data) {
-            // Also log activity
-            await supabase.from('admin_activity_logs').insert({
-              admin_id: adminId || null,
-              action: 'settings_updated',
-              entity_type: 'tournament_settings',
-              entity_id: currentId,
-              new_values: updates
-            });
+            // Also log activity safely (if table exists)
+            try {
+              await supabase.from('admin_activity_logs').insert({
+                admin_id: adminId || null,
+                action: 'settings_updated',
+                entity_type: 'tournament_settings',
+                entity_id: currentId,
+                new_values: updates
+              });
+            } catch (logErr) {
+              // Ignore logging failure if table does not exist
+            }
 
             return {
               ...updatedMock,

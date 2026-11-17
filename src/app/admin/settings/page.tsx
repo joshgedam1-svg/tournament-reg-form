@@ -109,43 +109,46 @@ export default function TournamentSettingsPage() {
 
     setLoading(true);
     try {
-      const res = await fetch('/api/admin/settings');
+      const res = await fetch('/api/admin/settings', { cache: 'no-store' });
       const json = await res.json();
       if (json.success && json.data) {
         const d: TournamentSettingsRow = json.data;
         setSettings(d);
 
-        // Only overwrite inputs from API if localStorage does not already have user's saved data
-        if (!hasLocal) {
-          if (d.tournament_name) setTournamentName(d.tournament_name);
-          if (d.registration_fee !== undefined) setRegistrationFee(d.registration_fee);
-          if (d.upi_id) setUpiId(d.upi_id);
-          if (d.maximum_player_capacity !== undefined) setCapacity(d.maximum_player_capacity);
-          if (d.registration_open !== undefined) setRegistrationOpen(d.registration_open);
-          if (d.registration_instructions !== undefined) setInstructions(d.registration_instructions || '');
-          if (d.upi_qr_path !== undefined) setUpiQrPath(d.upi_qr_path || null);
+        // Always update form state with the latest server database values
+        if (d.tournament_name) setTournamentName(d.tournament_name);
+        if (d.registration_fee !== undefined) setRegistrationFee(d.registration_fee);
+        if (d.upi_id) setUpiId(d.upi_id);
+        if (d.maximum_player_capacity !== undefined) setCapacity(d.maximum_player_capacity);
+        if (d.registration_open !== undefined) setRegistrationOpen(d.registration_open);
+        if (d.registration_instructions !== undefined) setInstructions(d.registration_instructions || '');
+        if (d.upi_qr_path !== undefined) setUpiQrPath(d.upi_qr_path || null);
 
-          // Schedule dates format to datetime-local compatible (YYYY-MM-DDTHH:mm)
-          if (d.registration_start_date) {
-            const s = d.registration_start_date.substring(0, 16);
-            setStartDate(s);
-          }
-          if (d.registration_end_date) {
-            const e = d.registration_end_date.substring(0, 16);
-            setEndDate(e);
-          }
-
-          // Banner fields
-          if (d.banner_image_path) setBannerPath(d.banner_image_path);
-          if (d.banner_title) setBannerTitle(d.banner_title);
-          if (d.banner_subtitle) setBannerSubtitle(d.banner_subtitle);
-          if (d.banner_enabled !== undefined) setBannerEnabled(d.banner_enabled);
-
-          // Support contacts
-          if (d.support_phone) setSupportPhone(d.support_phone);
-          if (d.support_whatsapp) setSupportWhatsapp(d.support_whatsapp);
-          if (d.support_email) setSupportEmail(d.support_email);
+        // Schedule dates format to datetime-local compatible (YYYY-MM-DDTHH:mm)
+        if (d.registration_start_date) {
+          const s = d.registration_start_date.substring(0, 16);
+          setStartDate(s);
         }
+        if (d.registration_end_date) {
+          const e = d.registration_end_date.substring(0, 16);
+          setEndDate(e);
+        }
+
+        // Banner fields
+        if (d.banner_image_path) setBannerPath(d.banner_image_path);
+        if (d.banner_title) setBannerTitle(d.banner_title);
+        if (d.banner_subtitle) setBannerSubtitle(d.banner_subtitle);
+        if (d.banner_enabled !== undefined) setBannerEnabled(d.banner_enabled);
+
+        // Support contacts
+        if (d.support_phone) setSupportPhone(d.support_phone);
+        if (d.support_whatsapp) setSupportWhatsapp(d.support_whatsapp);
+        if (d.support_email) setSupportEmail(d.support_email);
+
+        // Keep localStorage in sync with database truth
+        try {
+          localStorage.setItem('cal_tournament_settings', JSON.stringify(d));
+        } catch (e) {}
       }
     } catch (err) {
       console.error('Failed to load settings:', err);

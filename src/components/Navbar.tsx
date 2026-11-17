@@ -40,23 +40,17 @@ export default function Navbar() {
     } catch (e) {}
 
     // 2. Refresh from server API
-    fetch('/api/public/settings')
+    fetch('/api/public/settings', { cache: 'no-store' })
       .then(r => r.json())
       .then(json => {
         if (json.success && json.data) {
-          let localSettings: any = null;
+          if (json.data.support_phone) setSupportPhone(json.data.support_phone);
+          if (json.data.support_whatsapp) setSupportWhatsapp(json.data.support_whatsapp);
+          if (json.data.support_email) setSupportEmail(json.data.support_email);
+
           try {
-            const local = localStorage.getItem('cal_tournament_settings');
-            if (local) localSettings = JSON.parse(local);
+            localStorage.setItem('cal_tournament_settings', JSON.stringify(json.data));
           } catch (e) {}
-
-          const phone = localSettings?.support_phone || json.data.support_phone;
-          const wa = localSettings?.support_whatsapp || json.data.support_whatsapp;
-          const email = localSettings?.support_email || json.data.support_email;
-
-          if (phone) setSupportPhone(phone);
-          if (wa) setSupportWhatsapp(wa);
-          if (email) setSupportEmail(email);
         }
       })
       .catch(() => {});
