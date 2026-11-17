@@ -36,6 +36,9 @@ const initialSettings: TournamentSettingsRow = {
   banner_title: 'Cricket Auction League 2026',
   banner_subtitle: 'Grand Season Registration • Form Your Legacy on the Pitch',
   banner_enabled: true,
+  support_phone: '+91 98765 43210',
+  support_whatsapp: '+91 98765 43210',
+  support_email: 'support@cricketauctionleague.com',
   updated_by: null,
   updated_at: new Date().toISOString()
 };

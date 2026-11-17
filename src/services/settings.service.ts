@@ -32,7 +32,10 @@ export const settingsService = {
             banner_image_path: (data as any).banner_image_path ?? mock.banner_image_path,
             banner_title: (data as any).banner_title ?? mock.banner_title,
             banner_subtitle: (data as any).banner_subtitle ?? mock.banner_subtitle,
-            banner_enabled: (data as any).banner_enabled ?? mock.banner_enabled
+            banner_enabled: (data as any).banner_enabled ?? mock.banner_enabled,
+            support_phone: (data as any).support_phone ?? mock.support_phone,
+            support_whatsapp: (data as any).support_whatsapp ?? mock.support_whatsapp,
+            support_email: (data as any).support_email ?? mock.support_email
           };
         }
       } catch (err) {
@@ -53,7 +56,10 @@ export const settingsService = {
       banner_image_path: mock.banner_image_path,
       banner_title: mock.banner_title,
       banner_subtitle: mock.banner_subtitle,
-      banner_enabled: mock.banner_enabled
+      banner_enabled: mock.banner_enabled,
+      support_phone: mock.support_phone,
+      support_whatsapp: mock.support_whatsapp,
+      support_email: mock.support_email
     };
   },
 
@@ -78,7 +84,10 @@ export const settingsService = {
             banner_image_path: (data as any).banner_image_path ?? mock.banner_image_path,
             banner_title: (data as any).banner_title ?? mock.banner_title,
             banner_subtitle: (data as any).banner_subtitle ?? mock.banner_subtitle,
-            banner_enabled: (data as any).banner_enabled ?? mock.banner_enabled
+            banner_enabled: (data as any).banner_enabled ?? mock.banner_enabled,
+            support_phone: (data as any).support_phone ?? mock.support_phone,
+            support_whatsapp: (data as any).support_whatsapp ?? mock.support_whatsapp,
+            support_email: (data as any).support_email ?? mock.support_email
           } as TournamentSettingsRow;
         }
       } catch (err) {

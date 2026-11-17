@@ -1,11 +1,34 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { UserPlus, Search, MessageCircle } from 'lucide-react';
 
 export default function MobileBottomNav() {
   const pathname = usePathname();
+  const [whatsappNumber, setWhatsappNumber] = useState('919876543210');
+
+  useEffect(() => {
+    try {
+      const local = localStorage.getItem('cal_tournament_settings');
+      if (local) {
+        const parsed = JSON.parse(local);
+        const num = parsed.support_whatsapp || parsed.support_phone;
+        if (num) setWhatsappNumber(num.replace(/[^0-9]/g, ''));
+      }
+    } catch (e) {}
+
+    fetch('/api/public/settings')
+      .then(r => r.json())
+      .then(json => {
+        if (json.success && json.data) {
+          const num = json.data.support_whatsapp || json.data.support_phone;
+          if (num) setWhatsappNumber(num.replace(/[^0-9]/g, ''));
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   // Hide on admin routes (AdminLayout has its own responsive sidebar/drawer)
   if (pathname.startsWith('/admin')) {
@@ -43,7 +66,7 @@ export default function MobileBottomNav() {
       </Link>
 
       <a
-        href="https://wa.me/919876543210?text=Hi%2C%20I%20need%20help%20with%20Cricket%20Auction%20League%20registration%20or%20payment"
+        href={`https://wa.me/${whatsappNumber}?text=Hi%2C%20I%20need%20help%20with%20Cricket%20Auction%20League%20registration%20or%20payment`}
         target="_blank"
         rel="noopener noreferrer"
         className="flex flex-col items-center gap-0.5 py-1 px-5 rounded-xl text-[10px] font-semibold text-slate-500 hover:text-slate-900 transition-colors"

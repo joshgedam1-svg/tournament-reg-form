@@ -52,9 +52,18 @@ export default function RegistrationForm({ settings: propSettings, initialSettin
       banner_image_path: null,
       banner_title: null,
       banner_subtitle: null,
-      banner_enabled: true
+      banner_enabled: true,
+      support_phone: null,
+      support_whatsapp: null,
+      support_email: null
     }) as PublicTournamentSettings
   );
+
+  const supportPhone = settings.support_phone || '+91 98765 43210';
+  const supportWhatsapp = settings.support_whatsapp || settings.support_phone || '+91 98765 43210';
+  const supportEmail = settings.support_email || 'support@cricketauctionleague.com';
+  const cleanPhone = supportPhone.replace(/\s+/g, '');
+  const cleanWhatsapp = (settings.support_whatsapp || settings.support_phone || '919876543210').replace(/[^0-9]/g, '');
 
   // Client-side instant fetch to guarantee 100% fresh settings on mount
   React.useEffect(() => {
@@ -984,27 +993,27 @@ export default function RegistrationForm({ settings: propSettings, initialSettin
             </div>
             <div className="flex flex-wrap items-center gap-2 pt-0.5">
               <a
-                href="tel:+919876543210"
+                href={`tel:${cleanPhone}`}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-100 shadow-2xs transition-colors"
               >
                 <Phone className="w-3.5 h-3.5 text-primary-green" />
-                <span>Call: +91 98765 43210</span>
+                <span>Call: {supportPhone}</span>
               </a>
               <a
-                href="https://wa.me/919876543210?text=Hi%2C%20I%20need%20help%20with%20Cricket%20Auction%20League%20registration%20or%20payment"
+                href={`https://wa.me/${cleanWhatsapp}?text=Hi%2C%20I%20need%20help%20with%20Cricket%20Auction%20League%20registration%20or%20payment`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-100 shadow-2xs transition-colors"
               >
                 <MessageCircle className="w-3.5 h-3.5 text-primary-green" />
-                <span>WhatsApp Desk</span>
+                <span>WhatsApp Support</span>
               </a>
               <a
-                href="mailto:support@cricketauctionleague.com"
+                href={`mailto:${supportEmail}`}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-100 shadow-2xs transition-colors"
               >
                 <Mail className="w-3.5 h-3.5 text-primary-green" />
-                <span>support@cricketauctionleague.com</span>
+                <span>{supportEmail}</span>
               </a>
             </div>
           </div>

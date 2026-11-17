@@ -15,6 +15,9 @@ export interface TournamentSettingsRow {
   banner_title?: string | null;
   banner_subtitle?: string | null;
   banner_enabled?: boolean;
+  support_phone?: string | null;
+  support_whatsapp?: string | null;
+  support_email?: string | null;
   updated_by: string | null;
   updated_at: string;
 }
@@ -36,4 +39,7 @@ export interface PublicTournamentSettings {
   banner_title?: string | null;
   banner_subtitle?: string | null;
   banner_enabled?: boolean;
+  support_phone?: string | null;
+  support_whatsapp?: string | null;
+  support_email?: string | null;
 }

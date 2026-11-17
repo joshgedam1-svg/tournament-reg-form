@@ -20,7 +20,10 @@ import {
   Calendar,
   Clock,
   Eye,
-  Trophy
+  Trophy,
+  Phone,
+  MessageCircle,
+  Mail
 } from 'lucide-react';
 import QRCodeDisplay from '@/components/registration/QRCodeDisplay';
 import { TournamentSettingsRow } from '@/types/settings';
@@ -69,6 +72,11 @@ export default function TournamentSettingsPage() {
   const [uploadingBanner, setUploadingBanner] = useState(false);
   const [bannerFileName, setBannerFileName] = useState<string | null>(null);
 
+  // New: Helpline & Player Support Contact
+  const [supportPhone, setSupportPhone] = useState('+91 98765 43210');
+  const [supportWhatsapp, setSupportWhatsapp] = useState('+91 98765 43210');
+  const [supportEmail, setSupportEmail] = useState('support@cricketauctionleague.com');
+
   const fetchSettings = async () => {
     // 1. Immediately hydrate from localStorage if present
     let hasLocal = false;
@@ -91,6 +99,9 @@ export default function TournamentSettingsPage() {
           if (parsed.banner_title) setBannerTitle(parsed.banner_title);
           if (parsed.banner_subtitle) setBannerSubtitle(parsed.banner_subtitle);
           if (parsed.banner_enabled !== undefined) setBannerEnabled(parsed.banner_enabled);
+          if (parsed.support_phone) setSupportPhone(parsed.support_phone);
+          if (parsed.support_whatsapp) setSupportWhatsapp(parsed.support_whatsapp);
+          if (parsed.support_email) setSupportEmail(parsed.support_email);
         }
       } catch (e) {}
     }
@@ -128,6 +139,11 @@ export default function TournamentSettingsPage() {
           if (d.banner_title) setBannerTitle(d.banner_title);
           if (d.banner_subtitle) setBannerSubtitle(d.banner_subtitle);
           if (d.banner_enabled !== undefined) setBannerEnabled(d.banner_enabled);
+
+          // Support contacts
+          if (d.support_phone) setSupportPhone(d.support_phone);
+          if (d.support_whatsapp) setSupportWhatsapp(d.support_whatsapp);
+          if (d.support_email) setSupportEmail(d.support_email);
         }
       }
     } catch (err) {
@@ -250,7 +266,10 @@ export default function TournamentSettingsPage() {
         banner_image_path: bannerPath,
         banner_title: bannerTitle.trim() || tournamentName.trim(),
         banner_subtitle: bannerSubtitle.trim(),
-        banner_enabled: bannerEnabled
+        banner_enabled: bannerEnabled,
+        support_phone: supportPhone.trim(),
+        support_whatsapp: supportWhatsapp.trim(),
+        support_email: supportEmail.trim()
       };
 
       if (typeof window !== 'undefined') {
@@ -841,6 +860,80 @@ export default function TournamentSettingsPage() {
               placeholder="Instructions displayed on the player registration and payment section..."
               className="w-full p-3.5 rounded-xl border border-brand-border text-xs sm:text-sm text-brand-dark bg-white focus-ring leading-relaxed"
             />
+          </div>
+        </div>
+
+        {/* ============================================================================== */}
+        {/* 7. OFFICIAL HELPDESK & PLAYER SUPPORT CONTACT */}
+        {/* ============================================================================== */}
+        <div className="bg-white border border-brand-border rounded-2xl p-5 sm:p-6 shadow-xs space-y-4">
+          <div className="pb-2 border-b border-gray-100">
+            <h2 className="font-bold text-sm text-brand-dark uppercase tracking-wide flex items-center gap-2">
+              <Phone className="w-4 h-4 text-primary-green" />
+              <span>Helpline & Player Support Contact</span>
+            </h2>
+            <p className="text-xs text-brand-muted mt-0.5">
+              Yeh details Top Navbar, Mobile Menu, Bottom Bar aur Payment Help Card par live show hongi.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-brand-dark mb-1">
+                Helpline Phone Number
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={supportPhone}
+                  onChange={e => setSupportPhone(e.target.value)}
+                  placeholder="+91 98765 43210"
+                  className="w-full h-11 pl-9 pr-3.5 rounded-xl border border-brand-border text-xs sm:text-sm text-brand-dark bg-white focus-ring"
+                />
+                <Phone className="w-4 h-4 text-brand-muted absolute left-3 top-3.5" />
+              </div>
+              <span className="text-[11px] text-brand-muted mt-0.5 block">
+                Direct calling number for player inquiries.
+              </span>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-brand-dark mb-1">
+                WhatsApp Support Number
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={supportWhatsapp}
+                  onChange={e => setSupportWhatsapp(e.target.value)}
+                  placeholder="+91 98765 43210"
+                  className="w-full h-11 pl-9 pr-3.5 rounded-xl border border-brand-border text-xs sm:text-sm text-brand-dark bg-white focus-ring"
+                />
+                <MessageCircle className="w-4 h-4 text-emerald-600 absolute left-3 top-3.5" />
+              </div>
+              <span className="text-[11px] text-brand-muted mt-0.5 block">
+                1-tap WhatsApp chat number (instant support).
+              </span>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-brand-dark mb-1">
+                Official Support Email
+              </label>
+              <div className="relative">
+                <input
+                  type="email"
+                  value={supportEmail}
+                  onChange={e => setSupportEmail(e.target.value)}
+                  placeholder="support@cricketauctionleague.com"
+                  className="w-full h-11 pl-9 pr-3.5 rounded-xl border border-brand-border text-xs sm:text-sm text-brand-dark bg-white focus-ring"
+                />
+                <Mail className="w-4 h-4 text-brand-muted absolute left-3 top-3.5" />
+              </div>
+              <span className="text-[11px] text-brand-muted mt-0.5 block">
+                Email address for queries and documentation.
+              </span>
+            </div>
           </div>
         </div>
 

@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -16,8 +17,43 @@ import {
 
 export default function Navbar() {
   const pathname = usePathname();
+  const [mounted, setMounted] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [helpModalOpen, setHelpModalOpen] = useState(false);
+
+  const [supportPhone, setSupportPhone] = useState('+91 98765 43210');
+  const [supportWhatsapp, setSupportWhatsapp] = useState('+91 98765 43210');
+  const [supportEmail, setSupportEmail] = useState('support@cricketauctionleague.com');
+
+  useEffect(() => {
+    setMounted(true);
+
+    // 1. Instant hydration from cached localStorage if present
+    try {
+      const local = localStorage.getItem('cal_tournament_settings');
+      if (local) {
+        const parsed = JSON.parse(local);
+        if (parsed.support_phone) setSupportPhone(parsed.support_phone);
+        if (parsed.support_whatsapp) setSupportWhatsapp(parsed.support_whatsapp);
+        if (parsed.support_email) setSupportEmail(parsed.support_email);
+      }
+    } catch (e) {}
+
+    // 2. Refresh from server API
+    fetch('/api/public/settings')
+      .then(r => r.json())
+      .then(json => {
+        if (json.success && json.data) {
+          if (json.data.support_phone) setSupportPhone(json.data.support_phone);
+          if (json.data.support_whatsapp) setSupportWhatsapp(json.data.support_whatsapp);
+          if (json.data.support_email) setSupportEmail(json.data.support_email);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const cleanWhatsapp = (supportWhatsapp || supportPhone || '919876543210').replace(/[^0-9]/g, '');
+  const cleanPhone = (supportPhone || '+919876543210').replace(/\s+/g, '');
 
   // If in admin routes, AdminLayout handles its own header and sidebar
   const isAdminRoute = pathname.startsWith('/admin');
@@ -32,7 +68,8 @@ export default function Navbar() {
   ];
 
   return (
-    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-2xs">
+    <>
+      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-2xs">
       <div className="max-w-5xl mx-auto px-3 sm:px-4 h-14 sm:h-16 flex items-center justify-between gap-2">
         {/* Brand - Clean & Never Wraps on mobile */}
         <Link href="/register" className="flex items-center gap-2 sm:gap-2.5 min-w-0 shrink">
@@ -152,99 +189,106 @@ export default function Navbar() {
           </div>
         </div>
       )}
+    </header>
 
-      {/* Help & Support Modal */}
-      {helpModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
-          <div className="relative w-full max-w-sm sm:max-w-md bg-white rounded-2xl p-5 sm:p-6 shadow-xl border border-slate-200 space-y-4 my-auto animate-in zoom-in-95 duration-150">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center">
-                  <HelpCircle className="w-4 h-4 text-primary-green" />
+    {/* Help & Support Modal - Rendered via React Portal directly into document.body with z-[99999] so it can never be behind any banner or page content */}
+    {mounted && helpModalOpen && typeof document !== 'undefined' && createPortal(
+      <div
+        className="fixed inset-0 z-[99999] bg-slate-950/75 backdrop-blur-sm overflow-y-auto p-4 sm:p-6 flex min-h-screen items-center justify-center animate-in fade-in duration-150"
+        onClick={(e) => {
+          if (e.target === e.currentTarget) setHelpModalOpen(false);
+        }}
+      >
+        <div className="relative w-full max-w-sm sm:max-w-md bg-white rounded-2xl p-5 sm:p-6 shadow-2xl border border-slate-200 space-y-4 my-auto max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-150">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center">
+                <HelpCircle className="w-4 h-4 text-primary-green" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-sm text-slate-900">Tournament Committee Helpdesk</h3>
+                <p className="text-[11px] text-slate-500">Official Player Assistance</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setHelpModalOpen(false)}
+              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+              aria-label="Close modal"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          <p className="text-xs text-slate-600 leading-relaxed">
+            Registration, UPI payment ya tournament rules se sambandhit kisi bhi sawaal ke liye committee se sampark karein:
+          </p>
+
+          <div className="space-y-2 pt-1">
+            <a
+              href={`tel:${cleanPhone}`}
+              className="flex items-center justify-between p-3 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-colors group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-white border border-slate-200 text-slate-700 flex items-center justify-center">
+                  <Phone className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-sm text-slate-900">Tournament Committee Helpdesk</h3>
-                  <p className="text-[11px] text-slate-500">Official Player Assistance</p>
+                  <span className="block text-[10px] text-slate-500 uppercase tracking-wider font-semibold">Phone Helpline</span>
+                  <span className="font-semibold text-xs text-slate-900">{supportPhone}</span>
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={() => setHelpModalOpen(false)}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
-                aria-label="Close modal"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
+              <span className="text-[11px] font-semibold text-slate-600 bg-white border border-slate-200 px-2.5 py-1 rounded-lg">Call</span>
+            </a>
 
-            <p className="text-xs text-slate-600 leading-relaxed">
-              Registration, UPI payment ya tournament rules se sambandhit kisi bhi sawaal ke liye committee se sampark karein:
-            </p>
-
-            <div className="space-y-2 pt-1">
-              <a
-                href="tel:+919876543210"
-                className="flex items-center justify-between p-3 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-colors group"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-white border border-slate-200 text-slate-700 flex items-center justify-center">
-                    <Phone className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <span className="block text-[10px] text-slate-500 uppercase tracking-wider font-semibold">Phone Helpline</span>
-                    <span className="font-semibold text-xs text-slate-900">+91 98765 43210</span>
-                  </div>
+            <a
+              href={`https://wa.me/${cleanWhatsapp}?text=Hi%2C%20I%20need%20help%20with%20Cricket%20Auction%20League%20registration%20or%20payment`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-between p-3 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-colors group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-white border border-slate-200 text-primary-green flex items-center justify-center">
+                  <MessageCircle className="w-4 h-4" />
                 </div>
-                <span className="text-[11px] font-semibold text-slate-600 bg-white border border-slate-200 px-2.5 py-1 rounded-lg">Call</span>
-              </a>
-
-              <a
-                href="https://wa.me/919876543210?text=Hi%2C%20I%20need%20help%20with%20Cricket%20Auction%20League%20registration%20or%20payment"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-between p-3 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-colors group"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-white border border-slate-200 text-primary-green flex items-center justify-center">
-                    <MessageCircle className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <span className="block text-[10px] text-slate-500 uppercase tracking-wider font-semibold">WhatsApp Chat</span>
-                    <span className="font-semibold text-xs text-slate-900">Message Committee Desk</span>
-                  </div>
+                <div>
+                  <span className="block text-[10px] text-slate-500 uppercase tracking-wider font-semibold">WhatsApp Chat</span>
+                  <span className="font-semibold text-xs text-slate-900">{supportWhatsapp}</span>
                 </div>
-                <span className="text-[11px] font-semibold text-primary-green bg-white border border-emerald-200 px-2.5 py-1 rounded-lg">Chat</span>
-              </a>
+              </div>
+              <span className="text-[11px] font-semibold text-primary-green bg-white border border-emerald-200 px-2.5 py-1 rounded-lg">Chat</span>
+            </a>
 
-              <a
-                href="mailto:support@cricketauctionleague.com"
-                className="flex items-center justify-between p-3 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-colors group"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-white border border-slate-200 text-slate-700 flex items-center justify-center">
-                    <Mail className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <span className="block text-[10px] text-slate-500 uppercase tracking-wider font-semibold">Official Email</span>
-                    <span className="font-semibold text-xs text-slate-900">support@cricketauctionleague.com</span>
-                  </div>
+            <a
+              href={`mailto:${supportEmail}`}
+              className="flex items-center justify-between p-3 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-colors group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-white border border-slate-200 text-slate-700 flex items-center justify-center">
+                  <Mail className="w-4 h-4" />
                 </div>
-                <span className="text-[11px] font-semibold text-slate-600 bg-white border border-slate-200 px-2.5 py-1 rounded-lg">Email</span>
-              </a>
-            </div>
+                <div>
+                  <span className="block text-[10px] text-slate-500 uppercase tracking-wider font-semibold">Official Email</span>
+                  <span className="font-semibold text-xs text-slate-900 break-all">{supportEmail}</span>
+                </div>
+              </div>
+              <span className="text-[11px] font-semibold text-slate-600 bg-white border border-slate-200 px-2.5 py-1 rounded-lg">Email</span>
+            </a>
+          </div>
 
-            <div className="pt-2">
-              <button
-                type="button"
-                onClick={() => setHelpModalOpen(false)}
-                className="w-full py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs transition-colors"
-              >
-                Close
-              </button>
-            </div>
+          <div className="pt-2">
+            <button
+              type="button"
+              onClick={() => setHelpModalOpen(false)}
+              className="w-full py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs transition-colors"
+            >
+              Close
+            </button>
           </div>
         </div>
-      )}
-    </header>
+      </div>,
+      document.body
+    )}
+  </>
   );
 }
