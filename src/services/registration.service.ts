@@ -111,7 +111,8 @@ export const registrationService = {
           .from('payments')
           .insert({
             player_id: p.id,
-            amount: validated.amount || settings.registration_fee || 200,
+            // The organizer's current fixed fee is authoritative; never trust a stale client amount.
+            amount: settings.registration_fee,
             currency: 'INR',
             payment_method: 'UPI',
             utr_number: validated.utr_number.trim(),

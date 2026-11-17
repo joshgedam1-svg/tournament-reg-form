@@ -213,7 +213,7 @@ function TrackStatusContent() {
               </h3>
               <div className="flex justify-between py-1 border-b border-gray-200">
                 <span className="text-brand-muted">Registration Fee</span>
-                <span className="font-semibold text-brand-dark">₹{player.payment?.amount || 500}</span>
+                <span className="font-semibold text-brand-dark">₹{player.payment?.amount ?? '—'}</span>
               </div>
               <div className="flex justify-between py-1 border-b border-gray-200">
                 <span className="text-brand-muted">UTR Reference</span>

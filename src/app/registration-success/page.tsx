@@ -124,9 +124,14 @@ function SuccessContent() {
               </span>
             </div>
 
-            <div className="flex justify-between items-center py-1 border-b border-gray-200">
-              <span className="text-brand-muted">Registration Fee</span>
-              <span className="font-semibold text-brand-dark">₹500 (Paid via UPI)</span>
+            <div className="flex justify-between items-center gap-3 rounded-lg border border-primary-green/20 bg-light-green/50 px-3 py-2.5">
+              <div className="min-w-0">
+                <span className="text-brand-muted block">Registration Fee</span>
+                <span className="text-[11px] text-brand-muted">UPI payment · awaiting verification</span>
+              </div>
+              <span className="shrink-0 inline-flex items-center rounded-full bg-white px-3 py-1.5 font-bold text-primary-green shadow-xs">
+                {loading ? 'Loading…' : formatCurrencyINR(Number(playerData?.payment?.amount ?? playerData?.registration_fee ?? 0))}
+              </span>
             </div>
 
             {playerData?.payment?.utr_number && (
