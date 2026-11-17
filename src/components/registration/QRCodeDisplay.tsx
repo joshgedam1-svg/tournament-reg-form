@@ -120,7 +120,7 @@ export default function QRCodeDisplay({
             if (e.target === e.currentTarget) setIsZoomed(false);
           }}
         >
-          <div className="relative w-full max-w-sm sm:max-w-md bg-white rounded-3xl p-5 sm:p-6 shadow-2xl border border-slate-200 space-y-4 my-auto animate-in zoom-in-95 duration-150">
+          <div className="relative w-full max-w-md sm:max-w-xl bg-white rounded-3xl p-5 sm:p-6 shadow-2xl border border-slate-200 space-y-4 my-auto animate-in zoom-in-95 duration-150">
             {/* Modal Header */}
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2.5">
@@ -128,7 +128,9 @@ export default function QRCodeDisplay({
                   <QrCode className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-sm text-slate-900">Official UPI Payment QR</h3>
+                  <h3 className="font-bold text-sm text-slate-900">
+                    {customQrPath ? 'Official Merchant Payment QR' : 'Official UPI Payment QR'}
+                  </h3>
                   <p className="text-[11px] text-slate-500">Scan & Pay ₹{amount} Registration Fee</p>
                 </div>
               </div>
@@ -142,18 +144,25 @@ export default function QRCodeDisplay({
               </button>
             </div>
 
-            {/* High-res Large QR Image */}
-            <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200/80 flex flex-col items-center justify-center">
-              <div className="w-64 h-64 sm:w-72 sm:h-72 p-3 bg-white rounded-2xl border border-slate-200 shadow-sm flex items-center justify-center">
+            {/* High-res Large QR Image Container - Supports any size / aspect ratio up to large screen */}
+            <div className="p-3 sm:p-4 bg-slate-50 rounded-2xl border border-slate-200/80 flex flex-col items-center justify-center">
+              <div className="w-full max-h-[62vh] min-h-[260px] p-3 sm:p-4 bg-white rounded-2xl border border-slate-200 shadow-sm flex items-center justify-center overflow-hidden">
                 <img
                   src={zoomImageSrc}
                   alt={`Enlarged UPI QR Code for ${upiId}`}
-                  className="w-full h-full object-contain rounded-xl"
+                  className="w-auto h-auto max-w-full max-h-[56vh] object-contain rounded-xl"
                 />
               </div>
-              <p className="text-[11px] text-slate-500 mt-2 font-medium">
-                Google Pay • PhonePe • Paytm • BHIM • Cred
-              </p>
+              <div className="flex items-center justify-between w-full mt-2.5 px-1">
+                <p className="text-[11px] text-slate-500 font-medium">
+                  {customQrPath
+                    ? 'Merchant Bank Scanner • Official League Payment'
+                    : 'Google Pay • PhonePe • Paytm • BHIM • Cred'}
+                </p>
+                <span className="text-[10px] font-bold text-primary-green bg-light-green px-2 py-0.5 rounded-full">
+                  100% Verified
+                </span>
+              </div>
             </div>
 
             {/* UPI ID Row */}

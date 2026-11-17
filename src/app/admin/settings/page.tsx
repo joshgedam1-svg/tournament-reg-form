@@ -23,7 +23,8 @@ import {
   Trophy,
   Phone,
   MessageCircle,
-  Mail
+  Mail,
+  Maximize2
 } from 'lucide-react';
 import QRCodeDisplay from '@/components/registration/QRCodeDisplay';
 import { TournamentSettingsRow } from '@/types/settings';
@@ -709,21 +710,29 @@ export default function TournamentSettingsPage() {
           <div className="flex flex-col md:flex-row items-start gap-6 p-5 rounded-2xl bg-gray-50/80 border border-brand-border">
             {/* Live QR Preview Box */}
             <div className="flex flex-col items-center gap-2 shrink-0 mx-auto md:mx-0">
-              <QRCodeDisplay
-                upiId={upiId || 'cricketauctionleague@okhdfcbank'}
-                amount={registrationFee || 500}
-                tournamentName={tournamentName || 'Cricket Auction League'}
-                customQrPath={upiQrPath}
-                className="relative w-44 h-44 bg-white border border-brand-border rounded-2xl p-3 shadow-xs flex items-center justify-center shrink-0 overflow-hidden"
-              />
+              <div id="admin-qr-preview-box">
+                <QRCodeDisplay
+                  upiId={upiId || 'cricketauctionleague@okhdfcbank'}
+                  amount={registrationFee || 500}
+                  tournamentName={tournamentName || 'Cricket Auction League'}
+                  customQrPath={upiQrPath}
+                  className="relative w-44 h-44 bg-white border border-brand-border rounded-2xl p-3 shadow-xs flex items-center justify-center shrink-0 overflow-hidden"
+                />
+              </div>
               <span className="text-[11px] font-bold text-brand-dark uppercase tracking-wide">
                 Live Public Preview
               </span>
-              <span className="text-[10px] text-brand-muted text-center max-w-[170px]">
-                {upiQrPath
-                  ? 'Displaying your uploaded merchant QR image'
-                  : 'Displaying auto-generated ₹' + registrationFee + ' UPI QR'}
-              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  const el = document.getElementById('admin-qr-preview-box')?.querySelector('div');
+                  if (el) (el as HTMLElement).click();
+                }}
+                className="text-[11px] text-primary-green hover:underline font-semibold flex items-center gap-1 mt-0.5"
+              >
+                <Maximize2 className="w-3.5 h-3.5" />
+                <span>Tap to Preview Large</span>
+              </button>
             </div>
 
             {/* Inputs & Custom QR Upload Controls */}
@@ -793,6 +802,17 @@ export default function TournamentSettingsPage() {
                     </div>
 
                     <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const el = document.getElementById('admin-qr-preview-box')?.querySelector('div');
+                          if (el) (el as HTMLElement).click();
+                        }}
+                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-brand-border hover:bg-gray-50 text-xs font-semibold text-brand-dark transition-colors"
+                      >
+                        <Eye className="w-3.5 h-3.5 text-primary-green" />
+                        <span>Preview Large</span>
+                      </button>
                       <label className="px-3 py-1.5 rounded-lg border border-brand-border hover:bg-gray-50 text-xs font-semibold text-brand-dark cursor-pointer transition-colors">
                         <span>Replace</span>
                         <input

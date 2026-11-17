@@ -31,7 +31,8 @@ import {
   Mail,
   MessageCircle,
   Eye,
-  X
+  X,
+  Maximize2
 } from 'lucide-react';
 
 interface RegistrationFormProps {
@@ -986,13 +987,18 @@ export default function RegistrationForm({ settings: propSettings, initialSettin
         {/* Payment Card with QR & UPI ID */}
         <div className="bg-gray-50 border border-brand-border rounded-xl p-4 sm:p-5 space-y-4">
           <div className="flex flex-col sm:flex-row items-center gap-4 bg-white p-4 rounded-xl border border-brand-border">
-            {/* Live QR Code */}
-            <QRCodeDisplay
-              upiId={settings.upi_id}
-              amount={settings.registration_fee}
-              tournamentName={settings.tournament_name}
-              customQrPath={settings.upi_qr_path}
-            />
+            {/* Live QR Code with Tap to Zoom Indicator */}
+            <div className="flex flex-col items-center shrink-0">
+              <QRCodeDisplay
+                upiId={settings.upi_id}
+                amount={settings.registration_fee}
+                tournamentName={settings.tournament_name}
+                customQrPath={settings.upi_qr_path}
+              />
+              <span className="text-[10px] text-primary-green font-semibold mt-1.5 flex items-center gap-1 bg-light-green/70 px-2 py-0.5 rounded-full border border-primary-green/20">
+                <Maximize2 className="w-2.5 h-2.5" /> Tap QR to enlarge
+              </span>
+            </div>
 
             {/* UPI Details & Instructions */}
             <div className="flex-1 w-full space-y-3">
