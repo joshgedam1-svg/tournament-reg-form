@@ -107,6 +107,8 @@ export default function PlayersAdminPage() {
     amount: number;
   } | null>(null);
 
+  const [entryFee, setEntryFee] = useState<number>(200);
+
   // Form States
   const [addForm, setAddForm] = useState<CreatePlayerFormState>({
     full_name: '',
@@ -120,7 +122,7 @@ export default function PlayersAdminPage() {
     bowling_arm: 'right_arm',
     bowling_type: 'medium',
     payment_status: 'verified',
-    amount: 500,
+    amount: 200,
     utr_number: ''
   });
 
@@ -161,11 +163,11 @@ export default function PlayersAdminPage() {
           if (newPlayers.length > 0) {
             const latest = newPlayers[0];
             showToast(
-              `🔔 New Player Registered: ${latest.full_name} submitted ₹${latest.payment?.amount || 500} payment (UTR: ${latest.payment?.utr_number || 'N/A'})!`,
+              `🔔 New Player Registered: ${latest.full_name} submitted ₹${latest.payment?.amount || entryFee} payment (UTR: ${latest.payment?.utr_number || 'N/A'})!`,
               'info'
             );
             sendLocalPushNotification(
-              `🔔 Payment Received - ₹${latest.payment?.amount || 500}`,
+              `🔔 Payment Received - ₹${latest.payment?.amount || entryFee}`,
               `${latest.full_name} (${latest.registration_id}) ne payment submit kiya. UTR: ${latest.payment?.utr_number || 'N/A'}. Tap to verify.`,
               '/admin/players'
             );
@@ -192,6 +194,18 @@ export default function PlayersAdminPage() {
       setNotificationStatus(Notification.permission);
     }
 
+    // Load dynamic entry fee from settings
+    fetch('/api/public/settings')
+      .then(res => res.json())
+      .then(json => {
+        if (json.success && json.data?.registration_fee) {
+          const fee = Number(json.data.registration_fee);
+          setEntryFee(fee);
+          setAddForm(prev => ({ ...prev, amount: fee }));
+        }
+      })
+      .catch(() => {});
+
     // Auto-polling every 15 seconds to detect live new registrations
     const interval = setInterval(() => {
       fetchAllPlayers(true);
@@ -199,6 +213,13 @@ export default function PlayersAdminPage() {
 
     return () => clearInterval(interval);
   }, []);
+
+  // Compute total verified collection dynamically based on actual player payments
+  const totalVerifiedRevenue = useMemo(() => {
+    return allPlayers
+      .filter(p => p.payment?.payment_status === 'verified')
+      .reduce((sum, p) => sum + (Number(p.payment?.amount) || entryFee), 0);
+  }, [allPlayers, entryFee]);
 
   // Compute live executive metrics
   const stats = useMemo(() => {
@@ -321,7 +342,7 @@ export default function PlayersAdminPage() {
           bowling_arm: 'right_arm',
           bowling_type: 'medium',
           payment_status: 'verified',
-          amount: 500,
+          amount: entryFee,
           utr_number: ''
         });
         fetchAllPlayers(false);
@@ -699,8 +720,8 @@ export default function PlayersAdminPage() {
               <button
                 onClick={async () => {
                   const sent = await sendLocalPushNotification(
-                    '🔔 Payment Received - ₹500',
-                    'Rishabh Pant (CAL-2026-000004) ne UPI payment submit ki. UTR: 403928174632. Tap to review.',
+                    `🔔 Payment Received - ₹${entryFee}`,
+                    `Player ne UPI payment submit ki. UTR: 403928174632. Tap to review.`,
                     '/admin/players'
                   );
                   if (sent) {
@@ -792,7 +813,7 @@ export default function PlayersAdminPage() {
             </span>
             <div className="flex items-baseline gap-1.5 mt-0.5">
               <span className="text-xl font-bold text-emerald-700">{stats.verified}</span>
-              <span className="text-[11px] text-emerald-600 font-medium">₹{stats.verified * 500}</span>
+              <span className="text-[11px] text-emerald-600 font-medium">₹{totalVerifiedRevenue.toLocaleString('en-IN')}</span>
             </div>
             <span className="text-[10px] text-slate-400 block mt-0.5">
               Confirmed tournament docket
@@ -921,7 +942,7 @@ export default function PlayersAdminPage() {
                       <div className="flex items-center gap-2 text-[11px] font-mono text-emerald-700 mt-0.5">
                         <span className="font-bold">{p.registration_id}</span>
                         <span className="text-slate-300">•</span>
-                        <span className="font-semibold text-slate-800">₹{p.payment?.amount || 500}</span>
+                        <span className="font-semibold text-slate-800">₹{p.payment?.amount || entryFee}</span>
                       </div>
                       <div className="flex items-center gap-1 text-[11px] text-slate-500 mt-0.5">
                         <span className="font-mono text-slate-600">UTR: {p.payment?.utr_number || 'No UTR'}</span>
@@ -941,7 +962,7 @@ export default function PlayersAdminPage() {
                             player: p,
                             screenshotUrl: p.payment!.screenshot_path!,
                             utr: p.payment?.utr_number || 'N/A',
-                            amount: p.payment?.amount || 500
+                            amount: p.payment?.amount || entryFee
                           })
                         }
                         className="h-7.5 px-2 rounded-md bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 text-xs font-medium flex items-center gap-1"
@@ -957,7 +978,7 @@ export default function PlayersAdminPage() {
                       onClick={() => handleVerifyPaymentAndApprove(p)}
                       disabled={actionLoading}
                       className="h-7.5 px-2.5 rounded-md bg-primary-green hover:bg-primary-dark text-white text-xs font-semibold flex items-center gap-1 shadow-2xs transition-colors"
-                      title="Verify ₹500 payment and approve player immediately"
+                      title={`Verify ₹${p.payment?.amount || entryFee} payment and approve player immediately`}
                     >
                       <CheckCircle2 className="w-3 h-3" />
                       <span>Verify & Approve</span>
@@ -1172,7 +1193,7 @@ export default function PlayersAdminPage() {
                       <span className="text-slate-400 text-[10px] block">Payment:</span>
                       {isVerified ? (
                         <span className="font-semibold text-emerald-700 text-[11px] flex items-center gap-1">
-                          <CheckCircle2 className="w-3 h-3 text-emerald-600" /> ₹500 Paid
+                          <CheckCircle2 className="w-3 h-3 text-emerald-600" /> ₹{player.payment?.amount || entryFee} Paid
                         </span>
                       ) : isPending ? (
                         <span className="font-semibold text-amber-700 text-[11px] flex items-center gap-1">
@@ -1348,7 +1369,7 @@ export default function PlayersAdminPage() {
                           {isVerified ? (
                             <div>
                               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
-                                <CheckCircle2 className="w-3 h-3 text-emerald-600" /> ₹500 Verified
+                                <CheckCircle2 className="w-3 h-3 text-emerald-600" /> ₹{player.payment?.amount || entryFee} Verified
                               </span>
                               <span className="block text-[10px] font-mono text-slate-400 mt-0.5">
                                 UTR: {player.payment?.utr_number || 'N/A'}
@@ -1636,7 +1657,7 @@ export default function PlayersAdminPage() {
                     }
                     className="w-full h-8.5 px-3 rounded-lg border border-slate-200 text-xs text-slate-900 bg-white"
                   >
-                    <option value="verified">Verified (₹500 Paid)</option>
+                    <option value="verified">Verified (₹{entryFee} Paid)</option>
                     <option value="pending_verification">Pending Verification</option>
                   </select>
                 </div>
