@@ -153,11 +153,17 @@ export const registrationService = {
     if (isSupabaseConfigured()) {
       try {
         const supabase = getAdminClient();
-        const { data: player, error } = await supabase
-          .from('players')
-          .select('*, payments(*)')
-          .or(`id.eq.${idOrRegId},registration_id.ilike.${idOrRegId}`)
-          .maybeSingle();
+        const cleanId = idOrRegId.trim();
+        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cleanId);
+
+        let query = supabase.from('players').select('*, payments(*)');
+        if (isUuid) {
+          query = query.or(`id.eq.${cleanId},registration_id.ilike.${cleanId}`);
+        } else {
+          query = query.ilike('registration_id', cleanId);
+        }
+
+        const { data: player, error } = await query.maybeSingle();
 
         if (!error && player) {
           const p = player as any;

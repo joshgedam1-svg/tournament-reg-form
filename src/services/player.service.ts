@@ -92,18 +92,31 @@ export const playerService = {
           .single();
 
         if (!error && data) {
+          // Synchronize payment status to 'verified'
+          await supabase
+            .from('payments')
+            .update({
+              payment_status: 'verified',
+              verified_by: adminId !== 'admin' ? adminId : null,
+              verified_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            } as any)
+            .eq('player_id', id);
+
           await supabase.from('admin_activity_logs').insert({
             admin_id: adminId !== 'admin' ? adminId : null,
             action: 'registration_approved',
             entity_type: 'player',
             entity_id: id,
-            new_values: { registration_status: 'approved' }
+            new_values: { registration_status: 'approved', payment_status: 'verified' }
           } as any);
 
           const p = data as any;
+          const payment = p.payments?.[0] ? { ...p.payments[0], payment_status: 'verified' } : null;
           return {
             ...p,
-            payment: p.payments?.[0] || null
+            registration_status: 'approved',
+            payment
           } as PlayerWithPayment;
         }
       } catch (err) {
@@ -134,6 +147,17 @@ export const playerService = {
           .single();
 
         if (!error && data) {
+          // Synchronize payment status to 'rejected'
+          await supabase
+            .from('payments')
+            .update({
+              payment_status: 'rejected',
+              rejection_reason: reason.trim(),
+              verified_by: adminId !== 'admin' ? adminId : null,
+              updated_at: new Date().toISOString()
+            } as any)
+            .eq('player_id', id);
+
           await supabase.from('admin_activity_logs').insert({
             admin_id: adminId !== 'admin' ? adminId : null,
             action: 'registration_rejected',
@@ -143,9 +167,11 @@ export const playerService = {
           } as any);
 
           const p = data as any;
+          const payment = p.payments?.[0] ? { ...p.payments[0], payment_status: 'rejected', rejection_reason: reason.trim() } : null;
           return {
             ...p,
-            payment: p.payments?.[0] || null
+            registration_status: 'rejected',
+            payment
           } as PlayerWithPayment;
         }
       } catch (err) {
@@ -248,50 +274,56 @@ export const playerService = {
   },
 
   async deletePlayer(id: string, adminId: string = 'admin'): Promise<boolean> {
-    if (isSupabaseConfigured()) {
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+    if (isSupabaseConfigured() && isUuid) {
       try {
         const supabase = getAdminClient();
         await supabase.from('payments').delete().eq('player_id', id);
         const { error } = await supabase.from('players').delete().eq('id', id);
         if (!error) {
-          await supabase.from('admin_activity_logs').insert({
-            admin_id: adminId !== 'admin' ? adminId : null,
-            action: 'player_deleted',
-            entity_type: 'player',
-            entity_id: id
-          } as any);
-          return true;
+          try {
+            await supabase.from('admin_activity_logs').insert({
+              admin_id: adminId !== 'admin' ? adminId : null,
+              action: 'player_deleted',
+              entity_type: 'player',
+              entity_id: id
+            } as any);
+          } catch (_) {}
         }
       } catch (err) {
         console.error('Supabase deletePlayer error:', err);
       }
     }
 
-    return mockStore.deletePlayer(id, adminId);
+    mockStore.deletePlayer(id, adminId);
+    return true;
   },
 
   async deletePlayers(ids: string[], adminId: string = 'admin'): Promise<number> {
-    if (isSupabaseConfigured()) {
+    const validUuids = ids.filter(id => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id));
+    if (isSupabaseConfigured() && validUuids.length > 0) {
       try {
         const supabase = getAdminClient();
-        await supabase.from('payments').delete().in('player_id', ids);
-        const { error } = await supabase.from('players').delete().in('id', ids);
+        await supabase.from('payments').delete().in('player_id', validUuids);
+        const { error } = await supabase.from('players').delete().in('id', validUuids);
         if (!error) {
-          await supabase.from('admin_activity_logs').insert({
-            admin_id: adminId !== 'admin' ? adminId : null,
-            action: 'bulk_players_deleted',
-            entity_type: 'player',
-            entity_id: null,
-            old_values: { count: ids.length, ids }
-          } as any);
-          return ids.length;
+          try {
+            await supabase.from('admin_activity_logs').insert({
+              admin_id: adminId !== 'admin' ? adminId : null,
+              action: 'bulk_players_deleted',
+              entity_type: 'player',
+              entity_id: null,
+              old_values: { count: validUuids.length, ids: validUuids }
+            } as any);
+          } catch (_) {}
         }
       } catch (err) {
         console.error('Supabase deletePlayers error:', err);
       }
     }
 
-    return mockStore.deletePlayers(ids, adminId);
+    mockStore.deletePlayers(ids, adminId);
+    return ids.length;
   },
 
   async deleteAllPlayers(adminId: string = 'admin'): Promise<number> {
@@ -300,18 +332,20 @@ export const playerService = {
         const supabase = getAdminClient();
         await supabase.from('payments').delete().neq('id', '00000000-0000-0000-0000-000000000000');
         await supabase.from('players').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-        await supabase.from('admin_activity_logs').insert({
-          admin_id: adminId !== 'admin' ? adminId : null,
-          action: 'all_players_deleted',
-          entity_type: 'player',
-          entity_id: null
-        } as any);
-        return 1;
+        try {
+          await supabase.from('admin_activity_logs').insert({
+            admin_id: adminId !== 'admin' ? adminId : null,
+            action: 'all_players_deleted',
+            entity_type: 'player',
+            entity_id: null
+          } as any);
+        } catch (_) {}
       } catch (err) {
         console.error('Supabase deleteAllPlayers error:', err);
       }
     }
 
-    return mockStore.deleteAllPlayers(adminId);
+    mockStore.deleteAllPlayers(adminId);
+    return 1;
   }
 };

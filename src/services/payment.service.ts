@@ -55,28 +55,52 @@ export const paymentService = {
       try {
         const supabase = getAdminClient();
 
-        // 1. Call PostgreSQL atomic RPC function
-        const { error } = await supabase.rpc('verify_payment_transaction', {
-          p_payment_id: paymentId,
-          p_admin_id: adminId !== 'admin' ? adminId : '00000000-0000-0000-0000-000000000000'
-        } as any);
-
-        if (error) {
-          throw new Error(error.message);
-        }
-
-        // Fetch updated payment with player
-        const { data: updated, error: fetchErr } = await supabase
+        // 1. Direct safe update in Supabase payments table
+        const { data: updated, error: updateErr } = await supabase
           .from('payments')
-          .select('*, players(*)')
+          .update({
+            payment_status: 'verified',
+            verified_by: adminId !== 'admin' ? adminId : null,
+            verified_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          } as any)
           .eq('id', paymentId)
+          .select('*, players(*)')
           .single();
 
-        if (!fetchErr && updated) {
+        if (updateErr) {
+          throw new Error(updateErr.message);
+        }
+
+        if (updated) {
           const u = updated as any;
+
+          // 2. Synchronize player registration status to 'approved'
+          if (u.player_id) {
+            await supabase
+              .from('players')
+              .update({
+                registration_status: 'approved',
+                rejection_reason: null,
+                updated_at: new Date().toISOString()
+              } as any)
+              .eq('id', u.player_id);
+          }
+
+          // 3. Log admin activity
+          try {
+            await supabase.from('admin_activity_logs').insert({
+              admin_id: adminId !== 'admin' ? adminId : null,
+              action: 'payment_verified',
+              entity_type: 'payment',
+              entity_id: paymentId,
+              new_values: { payment_status: 'verified' }
+            } as any);
+          } catch (_) {}
+
           return {
             ...u,
-            player: {
+            player: u.players ? {
               id: u.players.id,
               registration_id: u.players.registration_id,
               full_name: u.players.full_name,
@@ -85,7 +109,7 @@ export const paymentService = {
               playing_role: u.players.playing_role,
               city: u.players.city,
               profile_photo_path: u.players.profile_photo_path
-            }
+            } : undefined
           } as PaymentWithPlayer;
         }
       } catch (err: any) {
@@ -122,6 +146,18 @@ export const paymentService = {
         }
 
         if (data) {
+          const d = data as any;
+          if (d.player_id) {
+            await supabase
+              .from('players')
+              .update({
+                registration_status: 'rejected',
+                rejection_reason: reason.trim(),
+                updated_at: new Date().toISOString()
+              } as any)
+              .eq('id', d.player_id);
+          }
+
           try {
             await supabase.from('admin_activity_logs').insert({
               admin_id: adminId !== 'admin' ? adminId : null,
@@ -132,10 +168,9 @@ export const paymentService = {
             } as any);
           } catch (_) {}
 
-          const d = data as any;
           return {
             ...d,
-            player: {
+            player: d.players ? {
               id: d.players.id,
               registration_id: d.players.registration_id,
               full_name: d.players.full_name,
@@ -144,7 +179,7 @@ export const paymentService = {
               playing_role: d.players.playing_role,
               city: d.players.city,
               profile_photo_path: d.players.profile_photo_path
-            }
+            } : undefined
           } as PaymentWithPlayer;
         }
       } catch (err: any) {

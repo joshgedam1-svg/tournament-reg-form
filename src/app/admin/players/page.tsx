@@ -522,12 +522,19 @@ export default function PlayersAdminPage() {
       const json = await res.json();
       if (json.success) {
         setAllPlayers(prev =>
-          prev.map(p => (p.id === playerId ? { ...p, registration_status: 'approved', rejection_reason: null } : p))
+          prev.map(p => {
+            if (p.id === playerId) {
+              const updatedPayment = p.payment ? { ...p.payment, payment_status: 'verified' as const } : p.payment;
+              return { ...p, registration_status: 'approved', rejection_reason: null, payment: updatedPayment };
+            }
+            return p;
+          })
         );
         if (selectedPlayer?.id === playerId) {
           setSelectedPlayer(prev => (prev ? { ...prev, registration_status: 'approved', rejection_reason: null } : null));
         }
-        showToast('Player approved successfully!');
+        showToast('Player approved & payment verified successfully!');
+        fetchAllPlayers(false);
       } else {
         alert(json.error || 'Failed to approve registration');
       }
@@ -552,11 +559,13 @@ export default function PlayersAdminPage() {
       const json = await res.json();
       if (json.success) {
         setAllPlayers(prev =>
-          prev.map(p =>
-            p.id === rejectingPlayer.id
-              ? { ...p, registration_status: 'rejected', rejection_reason: rejectionReason.trim() }
-              : p
-          )
+          prev.map(p => {
+            if (p.id === rejectingPlayer.id) {
+              const updatedPayment = p.payment ? { ...p.payment, payment_status: 'rejected' as const, rejection_reason: rejectionReason.trim() } : p.payment;
+              return { ...p, registration_status: 'rejected', rejection_reason: rejectionReason.trim(), payment: updatedPayment };
+            }
+            return p;
+          })
         );
         if (selectedPlayer?.id === rejectingPlayer.id) {
           setSelectedPlayer(prev =>
@@ -566,6 +575,7 @@ export default function PlayersAdminPage() {
         setRejectingPlayer(null);
         setRejectionReason('');
         showToast('Player registration rejected.');
+        fetchAllPlayers(false);
       } else {
         alert(json.error || 'Failed to reject registration');
       }
