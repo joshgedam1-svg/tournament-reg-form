@@ -107,17 +107,42 @@ export const settingsService = {
         const supabase = getAdminClient();
         const { data: current } = await supabase.from('tournament_settings').select('id').limit(1).maybeSingle();
 
+        // Whitelist only valid columns that exist in the PostgreSQL table
+        const validColumns = [
+          'tournament_name',
+          'registration_fee',
+          'upi_id',
+          'upi_qr_path',
+          'maximum_player_capacity',
+          'registration_open',
+          'registration_instructions',
+          'registration_start_date',
+          'registration_end_date',
+          'banner_image_path',
+          'banner_title',
+          'banner_subtitle',
+          'banner_enabled',
+          'support_phone',
+          'support_whatsapp',
+          'support_email'
+        ];
+
+        const dbPayload: any = {
+          updated_at: new Date().toISOString()
+        };
+
+        for (const col of validColumns) {
+          if (col in updates) {
+            dbPayload[col] = (updates as any)[col];
+          }
+        }
+
         if (current && (current as any).id) {
           const currentId = (current as any).id;
 
-          // Attempt update with all fields
           const { data, error } = await supabase
             .from('tournament_settings')
-            .update({
-              ...updates,
-              updated_by: adminId || null,
-              updated_at: new Date().toISOString()
-            })
+            .update(dbPayload)
             .eq('id', currentId)
             .select()
             .single();
@@ -130,7 +155,7 @@ export const settingsService = {
                 action: 'settings_updated',
                 entity_type: 'tournament_settings',
                 entity_id: currentId,
-                new_values: updates
+                new_values: dbPayload
               });
             } catch (logErr) {
               // Ignore logging failure if table does not exist
@@ -142,42 +167,13 @@ export const settingsService = {
             } as TournamentSettingsRow;
           }
 
-          // If there was an error (e.g. some columns not in Supabase yet), fallback to core columns
           if (error) {
-            console.warn('Full update failed, attempting core columns update:', error.message);
-            const coreFields: any = {};
-            const allowed = [
-              'tournament_name',
-              'registration_fee',
-              'upi_id',
-              'upi_qr_path',
-              'maximum_player_capacity',
-              'registration_open',
-              'registration_instructions'
-            ];
-            for (const key of allowed) {
-              if (key in updates) {
-                coreFields[key] = (updates as any)[key];
-              }
-            }
-
-            await supabase
-              .from('tournament_settings')
-              .update({
-                ...coreFields,
-                updated_by: adminId || null,
-                updated_at: new Date().toISOString()
-              })
-              .eq('id', currentId);
+            console.error('Supabase update failed:', error.message);
           }
         } else {
           // If no row exists yet in Supabase table, insert first settings row
           try {
-            await supabase.from('tournament_settings').insert({
-              ...updates,
-              updated_by: adminId || null,
-              updated_at: new Date().toISOString()
-            });
+            await supabase.from('tournament_settings').insert(dbPayload);
           } catch (insertErr: any) {
             console.warn('Initial settings insert fallback:', insertErr.message);
           }

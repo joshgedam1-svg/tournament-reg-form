@@ -78,6 +78,19 @@ export default function TournamentSettingsPage() {
   const [supportWhatsapp, setSupportWhatsapp] = useState('+91 98765 43210');
   const [supportEmail, setSupportEmail] = useState('support@cricketauctionleague.com');
 
+  // Helper to format ISO date to <input type="datetime-local"> in local timezone
+  const toLocalInputString = (isoString?: string | null) => {
+    if (!isoString) return '';
+    try {
+      const d = new Date(isoString);
+      if (isNaN(d.getTime())) return '';
+      const pad = (n: number) => n.toString().padStart(2, '0');
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    } catch {
+      return isoString.substring(0, 16);
+    }
+  };
+
   const fetchSettings = async () => {
     // 1. Immediately hydrate from localStorage if present
     let hasLocal = false;
@@ -126,12 +139,10 @@ export default function TournamentSettingsPage() {
 
         // Schedule dates format to datetime-local compatible (YYYY-MM-DDTHH:mm)
         if (d.registration_start_date) {
-          const s = d.registration_start_date.substring(0, 16);
-          setStartDate(s);
+          setStartDate(toLocalInputString(d.registration_start_date));
         }
         if (d.registration_end_date) {
-          const e = d.registration_end_date.substring(0, 16);
-          setEndDate(e);
+          setEndDate(toLocalInputString(d.registration_end_date));
         }
 
         // Banner fields
