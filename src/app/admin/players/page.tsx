@@ -607,45 +607,60 @@ export default function PlayersAdminPage() {
     }
   };
 
-  const exportCSV = () => {
+  const exportPlayersCSV = async () => {
+    let playersToExport: PlayerWithPayment[];
+    try {
+      const response = await fetch('/api/admin/players', { cache: 'no-store' });
+      const result = await response.json();
+      if (!response.ok || !result.success || !Array.isArray(result.data)) {
+        throw new Error(result.error || 'Could not fetch the latest player list.');
+      }
+      playersToExport = result.data;
+      setAllPlayers(playersToExport);
+    } catch (error) {
+      console.error('Player CSV export failed:', error);
+      showToast('Could not fetch the latest players. No CSV was downloaded.', 'error');
+      return;
+    }
+
     const headers = [
       'Registration ID',
       'Name',
-      'Email',
       'Mobile',
-      'Role',
-      'Batting',
-      'Bowling',
-      'City',
-      'Payment Status',
-      'UTR',
+      'Date of Birth',
+      'Address',
+      'Playing Role',
       'Registration Status'
     ];
-    const rows = displayedPlayers.map(p => [
+    const rows = playersToExport.map(p => [
       p.registration_id,
       p.full_name,
-      p.email,
       p.mobile,
-      p.playing_role,
-      p.batting_style,
-      p.bowling_arm,
-      p.city,
-      p.payment?.payment_status || 'N/A',
-      p.payment?.utr_number || 'N/A',
-      p.registration_status
+      p.date_of_birth,
+      p.address,
+      p.playing_role.replace(/_/g, ' ').replace(/\b\w/g, letter => letter.toUpperCase()),
+      p.registration_status.replace(/_/g, ' ').replace(/\b\w/g, letter => letter.toUpperCase())
     ]);
 
+    // Export only the seven fields requested. Excel's separator hint keeps
+    // comma-delimited CSV columns split correctly on locale-specific installs.
+    const encodeCell = (value: unknown) => {
+      const text = value === null || value === undefined ? '' : String(value);
+      return `"${text.replace(/"/g, '""')}"`;
+    };
     const csvContent =
-      'data:text/csv;charset=utf-8,' +
-      [headers.join(','), ...rows.map(e => e.map(x => `"${x}"`).join(','))].join('\n');
-
-    const encodedUri = encodeURI(csvContent);
+      '\uFEFF' +
+      'sep=,\r\n' +
+      [headers, ...rows].map(row => row.map(encodeCell).join(',')).join('\r\n');
+    const file = new Blob([csvContent], { type: 'text/csv;charset=utf-8' });
+    const objectUrl = URL.createObjectURL(file);
     const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
+    link.setAttribute('href', objectUrl);
     link.setAttribute('download', `CAL_Players_Export_${new Date().toISOString().slice(0, 10)}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
   };
 
   return (
@@ -761,9 +776,9 @@ export default function PlayersAdminPage() {
 
             {/* Export CSV */}
             <button
-              onClick={exportCSV}
+              onClick={exportPlayersCSV}
               className="inline-flex items-center gap-1.5 h-8.5 px-2.5 rounded-lg bg-white hover:bg-slate-50 border border-slate-200 text-xs font-medium text-slate-700 transition-colors shadow-2xs"
-              title="Download player data as CSV"
+              title="Download all registered players as CSV"
             >
               <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
               <span>Export CSV</span>
