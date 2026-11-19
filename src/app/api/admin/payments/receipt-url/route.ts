@@ -6,25 +6,36 @@ import { getAdminClient } from '@/lib/supabase/admin';
 function getStoragePath(value: unknown): string | null {
   if (typeof value !== 'string' || !value.trim()) return null;
 
-  const input = value.trim();
+  let input = value.trim();
   const marker = '/storage/v1/object/';
   const markerIndex = input.indexOf(marker);
-  let path = input;
 
   if (markerIndex !== -1) {
-    const objectPath = input.slice(markerIndex + marker.length);
-    const bucketPrefix = objectPath.match(/^(?:public|sign)\/payment-screenshots\/(.+)$/);
+    const objectPath = input.slice(markerIndex + marker.length).split('?')[0];
+    const bucketPrefix = objectPath.match(/^(?:public|sign|authenticated)\/payment-screenshots\/(.+)$/);
     if (!bucketPrefix) return null;
-    path = bucketPrefix[1].split('?')[0];
+    input = bucketPrefix[1];
+  } else if (/^https?:\/\//i.test(input)) {
+    return null;
   }
 
+  let path: string;
   try {
-    path = decodeURIComponent(path);
+    path = decodeURIComponent(input.split('?')[0]).replace(/^\/+/, '');
   } catch {
     return null;
   }
 
-  if (!path.startsWith('payments/') || path.includes('..') || path.startsWith('/')) return null;
+  // Older records may contain a bucket-prefixed key or a different folder
+  // name. The bucket is fixed in createSignedUrl, so accept any safe key in it.
+  if (path.startsWith('payment-screenshots/')) path = path.slice('payment-screenshots/'.length);
+  const segments = path.split('/');
+  if (
+    !path ||
+    path.includes('\\') ||
+    segments.some(segment => !segment || segment === '.' || segment === '..')
+  ) return null;
+
   return path;
 }
 
