@@ -148,6 +148,32 @@ export default function PlayersAdminPage() {
     setTimeout(() => setToastMessage(null), 5000);
   };
 
+  const openPaymentReceipt = async (player: PlayerWithPayment) => {
+    const screenshotPath = player.payment?.screenshot_path;
+    if (!screenshotPath) return;
+
+    try {
+      const response = await fetch('/api/admin/payments/receipt-url', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ screenshotPath })
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success || typeof result.url !== 'string') {
+        throw new Error(result.error || 'Could not open this receipt.');
+      }
+
+      setInspectingPayment({
+        player,
+        screenshotUrl: result.url,
+        utr: player.payment?.utr_number || 'N/A',
+        amount: player.payment?.amount || entryFee
+      });
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : 'Could not open this receipt.', 'error');
+    }
+  };
+
   // Master fetch: loads all players without filter so counts & stats are always 100% accurate
   const fetchAllPlayers = async (isBackground = false) => {
     if (!isBackground) setRefreshing(true);
@@ -972,14 +998,7 @@ export default function PlayersAdminPage() {
                     {/* View Receipt Screenshot */}
                     {p.payment?.screenshot_path && (
                       <button
-                        onClick={() =>
-                          setInspectingPayment({
-                            player: p,
-                            screenshotUrl: p.payment!.screenshot_path!,
-                            utr: p.payment?.utr_number || 'N/A',
-                            amount: p.payment?.amount || entryFee
-                          })
-                        }
+                        onClick={() => openPaymentReceipt(p)}
                         className="h-7.5 px-2 rounded-md bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 text-xs font-medium flex items-center gap-1"
                         title="Inspect UPI payment screenshot"
                       >
@@ -2230,15 +2249,14 @@ export default function PlayersAdminPage() {
                     </span>
                   </div>
                   {selectedPlayer.payment?.screenshot_path && (
-                    <a
-                      href={selectedPlayer.payment.screenshot_path}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <button
+                      type="button"
+                      onClick={() => openPaymentReceipt(selectedPlayer)}
                       className="inline-flex items-center gap-1 px-2.5 py-1 rounded border border-slate-200 bg-white hover:bg-slate-100 text-xs font-semibold text-slate-700"
                     >
                       <Receipt className="w-3 h-3 text-slate-500" />
                       <span>View Receipt</span>
-                    </a>
+                    </button>
                   )}
                 </div>
               </div>
