@@ -12,10 +12,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
     }
 
-    // 1. File size check (Max 5MB)
-    const MAX_SIZE = 5 * 1024 * 1024;
+    // Server-side cap protects storage even if a client skips compression.
+    const MAX_SIZE = 1536 * 1024;
     if (file.size > MAX_SIZE) {
-      return NextResponse.json({ error: 'File exceeds maximum limit of 5 MB' }, { status: 400 });
+      return NextResponse.json({ error: 'Image exceeds the 1.5 MB limit. Please choose a smaller image.' }, { status: 400 });
     }
 
     // 2. MIME type check
@@ -50,21 +50,14 @@ export async function POST(req: NextRequest) {
             fileName: file.name
           });
         }
+        console.error('Supabase payment screenshot upload failed:', error?.message || 'No storage response');
+        return NextResponse.json({ error: 'Screenshot storage is temporarily unavailable. Please retry.' }, { status: 503 });
       } catch (storageErr) {
         console.error('Supabase storage upload error:', storageErr);
+        return NextResponse.json({ error: 'Screenshot storage is temporarily unavailable. Please retry.' }, { status: 503 });
       }
     }
-
-    // Local / data URL preview fallback for testing without configured S3/Supabase storage
-    const buffer = Buffer.from(await file.arrayBuffer());
-    const base64 = buffer.toString('base64');
-    const dataUrl = `data:${file.type};base64,${base64}`;
-
-    return NextResponse.json({
-      success: true,
-      filePath: dataUrl,
-      fileName: file.name
-    });
+    return NextResponse.json({ error: 'Screenshot storage is not configured. Please contact the tournament organizer.' }, { status: 503 });
   } catch (err: any) {
     console.error('Upload API error:', err);
     return NextResponse.json({ error: err.message || 'Failed to upload screenshot' }, { status: 500 });

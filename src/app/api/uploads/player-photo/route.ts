@@ -11,10 +11,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No image uploaded' }, { status: 400 });
     }
 
-    // Max 3MB
-    const MAX_SIZE = 3 * 1024 * 1024;
+    // Server-side cap protects storage even if a client skips compression.
+    const MAX_SIZE = 1536 * 1024;
     if (file.size > MAX_SIZE) {
-      return NextResponse.json({ error: 'Image exceeds maximum limit of 3 MB' }, { status: 400 });
+      return NextResponse.json({ error: 'Image exceeds the 1.5 MB limit. Please choose a smaller image.' }, { status: 400 });
     }
 
     const ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
@@ -45,20 +45,14 @@ export async function POST(req: NextRequest) {
             fileName: file.name
           });
         }
+        console.error('Supabase player-photo upload failed:', error?.message || 'No storage response');
+        return NextResponse.json({ error: 'Photo storage is temporarily unavailable. Please retry.' }, { status: 503 });
       } catch (storageErr) {
         console.error('Supabase player-photo upload error:', storageErr);
+        return NextResponse.json({ error: 'Photo storage is temporarily unavailable. Please retry.' }, { status: 503 });
       }
     }
-
-    const buffer = Buffer.from(await file.arrayBuffer());
-    const base64 = buffer.toString('base64');
-    const dataUrl = `data:${file.type};base64,${base64}`;
-
-    return NextResponse.json({
-      success: true,
-      filePath: dataUrl,
-      fileName: file.name
-    });
+    return NextResponse.json({ error: 'Photo storage is not configured. Please contact the tournament organizer.' }, { status: 503 });
   } catch (err: any) {
     return NextResponse.json({ error: err.message || 'Failed to upload photo' }, { status: 500 });
   }

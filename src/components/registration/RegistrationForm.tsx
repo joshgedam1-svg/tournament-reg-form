@@ -185,8 +185,8 @@ export default function RegistrationForm({ settings: propSettings, initialSettin
   };
 
   // Helper to compress images client-side before uploading (speeds up submission by 95%+)
-  const compressImage = async (file: File, maxDimension = 1200, quality = 0.8): Promise<File> => {
-    return new Promise((resolve) => {
+  const compressImage = async (file: File, maxDimension = 1200, quality = 0.82): Promise<File> => {
+    return new Promise((resolve, reject) => {
       if (!file.type.startsWith('image/') || file.type === 'image/svg+xml') {
         return resolve(file);
       }
@@ -213,18 +213,32 @@ export default function RegistrationForm({ settings: propSettings, initialSettin
           const ctx = canvas.getContext('2d');
           if (!ctx) return resolve(file);
           ctx.drawImage(img, 0, 0, width, height);
-          canvas.toBlob(
-            (blob) => {
+          const encode = (q: number, scale: number, attempt: number) => {
+            canvas.toBlob((blob) => {
               if (!blob) return resolve(file);
-              const compressedFile = new File([blob], file.name.replace(/\.[^/.]+$/, '.jpg'), {
+              if (blob.size > 1024 * 1024 && attempt < 6) {
+                if (q > 0.5) encode(Math.max(0.5, q - 0.08), scale, attempt + 1);
+                else {
+                  const nextScale = scale * 0.85;
+                  canvas.width = Math.max(1, Math.round(width * nextScale));
+                  canvas.height = Math.max(1, Math.round(height * nextScale));
+                  const resized = canvas.getContext('2d');
+                  if (!resized) return resolve(file);
+                  resized.drawImage(img, 0, 0, canvas.width, canvas.height);
+                  encode(0.7, nextScale, attempt + 1);
+                }
+                return;
+              }
+              if (blob.size > 1536 * 1024) {
+                return reject(new Error('Image could not be reduced below 1.5 MB. Please choose a smaller image.'));
+              }
+              resolve(new File([blob], file.name.replace(/\.[^/.]+$/, '.jpg'), {
                 type: 'image/jpeg',
                 lastModified: Date.now()
-              });
-              resolve(compressedFile);
-            },
-            'image/jpeg',
-            quality
-          );
+              }));
+            }, 'image/jpeg', q);
+          };
+          encode(quality, 1, 0);
         };
         img.onerror = () => resolve(file);
       };
@@ -240,6 +254,7 @@ export default function RegistrationForm({ settings: propSettings, initialSettin
     setUploadingPhoto(true);
     try {
       const file = await compressImage(rawFile, 1200, 0.8);
+      if (file.size > 1536 * 1024) throw new Error('Image could not be reduced below 1.5 MB. Please choose a smaller image.');
       const data = new FormData();
       data.append('file', file);
 
@@ -276,6 +291,7 @@ export default function RegistrationForm({ settings: propSettings, initialSettin
     setUploadingScreenshot(true);
     try {
       const file = await compressImage(rawFile, 1200, 0.8);
+      if (file.size > 1536 * 1024) throw new Error('Image could not be reduced below 1.5 MB. Please choose a smaller image.');
       const data = new FormData();
       data.append('file', file);
 
