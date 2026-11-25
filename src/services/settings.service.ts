@@ -133,9 +133,26 @@ export const settingsService = {
 
         for (const col of validColumns) {
           if (col in updates) {
-            dbPayload[col] = (updates as any)[col];
+            let value = (updates as any)[col];
+            if (col === 'registration_start_date' || col === 'registration_end_date') {
+              if (value) {
+                const parsedDate = new Date(value);
+                if (isNaN(parsedDate.getTime())) {
+                  throw new Error(`Invalid date format for ${col}`);
+                }
+                value = parsedDate.toISOString();
+              } else {
+                value = null;
+              }
+            }
+            dbPayload[col] = value;
           }
         }
+
+        const validAdminUuid =
+          adminId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(adminId)
+            ? adminId
+            : null;
 
         if (current && (current as any).id) {
           const currentId = (current as any).id;
@@ -147,39 +164,49 @@ export const settingsService = {
             .select()
             .single();
 
-          if (!error && data) {
-            // Also log activity safely (if table exists)
-            try {
-              await supabase.from('admin_activity_logs').insert({
-                admin_id: adminId || null,
-                action: 'settings_updated',
-                entity_type: 'tournament_settings',
-                entity_id: currentId,
-                new_values: dbPayload
-              });
-            } catch (logErr) {
-              // Ignore logging failure if table does not exist
-            }
-
-            return {
-              ...updatedMock,
-              ...data
-            } as TournamentSettingsRow;
+          if (error || !data) {
+            console.error('Supabase update failed:', error?.message);
+            throw new Error(error?.message || 'Database failed to save tournament settings');
           }
 
-          if (error) {
-            console.error('Supabase update failed:', error.message);
+          // Also log activity safely (if table exists)
+          try {
+            await supabase.from('admin_activity_logs').insert({
+              admin_id: validAdminUuid,
+              action: 'settings_updated',
+              entity_type: 'tournament_settings',
+              entity_id: currentId,
+              new_values: dbPayload
+            });
+          } catch (logErr) {
+            // Ignore logging failure if table does not exist
           }
+
+          return {
+            ...updatedMock,
+            ...data
+          } as TournamentSettingsRow;
         } else {
           // If no row exists yet in Supabase table, insert first settings row
-          try {
-            await supabase.from('tournament_settings').insert(dbPayload);
-          } catch (insertErr: any) {
-            console.warn('Initial settings insert fallback:', insertErr.message);
+          const { data, error } = await supabase
+            .from('tournament_settings')
+            .insert(dbPayload)
+            .select()
+            .single();
+
+          if (error || !data) {
+            console.error('Initial settings insert failed:', error?.message);
+            throw new Error(error?.message || 'Database failed to create tournament settings');
           }
+
+          return {
+            ...updatedMock,
+            ...data
+          } as TournamentSettingsRow;
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error('Failed to update Supabase settings:', err);
+        throw new Error(err?.message || 'Failed to persist tournament settings to database');
       }
     }
 

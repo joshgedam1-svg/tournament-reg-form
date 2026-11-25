@@ -14,10 +14,23 @@ export const registrationService = {
     const normalizedMobile = normalizeMobile(validated.mobile);
     const normalizedEmail = validated.email.trim().toLowerCase();
 
-    // 3. Verify registration is open & check capacity
+    // 3. Verify registration is open & within schedule dates
     const settings = await settingsService.getPublicSettings();
     if (!settings.registration_open) {
       throw new Error('Tournament registrations are currently closed by the organizers.');
+    }
+    const now = new Date();
+    if (settings.registration_start_date) {
+      const startAt = new Date(settings.registration_start_date);
+      if (!isNaN(startAt.getTime()) && now < startAt) {
+        throw new Error('Tournament registrations have not opened yet.');
+      }
+    }
+    if (settings.registration_end_date) {
+      const endAt = new Date(settings.registration_end_date);
+      if (!isNaN(endAt.getTime()) && now > endAt) {
+        throw new Error('The registration deadline has passed. Submissions are now closed.');
+      }
     }
 
     if (isSupabaseConfigured()) {

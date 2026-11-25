@@ -80,6 +80,7 @@ export default function PlayersAdminPage() {
   const [activeFilter, setActiveFilter] = useState<string>('all');
   const [selectedPlayer, setSelectedPlayer] = useState<PlayerWithPayment | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [toastMessage, setToastMessage] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null);
   const [newSubmissionsFeedOpen, setNewSubmissionsFeedOpen] = useState(true);
   const [notificationStatus, setNotificationStatus] = useState<NotificationPermission>('default');
@@ -633,126 +634,71 @@ export default function PlayersAdminPage() {
     }
   };
 
-  const exportPlayersCSV = async () => {
-    let playersToExport: PlayerWithPayment[] = [];
+  const exportPlayersExcel = async () => {
+    if (exporting) return;
+    setExporting(true);
+
     try {
-      const response = await fetch('/api/admin/players', { cache: 'no-store' });
-      if (response.ok) {
-        const result = await response.json();
-        if (result.success && Array.isArray(result.data) && result.data.length > 0) {
-          playersToExport = result.data;
-          setAllPlayers(playersToExport);
+      let playersToExport: PlayerWithPayment[] = [];
+      try {
+        const response = await fetch('/api/admin/players', { cache: 'no-store' });
+        if (response.ok) {
+          const result = await response.json();
+          if (result.success && Array.isArray(result.data) && result.data.length > 0) {
+            playersToExport = result.data;
+            setAllPlayers(playersToExport);
+          }
+        }
+      } catch (error) {
+        console.warn('API fetch during Excel export failed, using state roster:', error);
+      }
+
+      // Seamless fallback to loaded state players if fetch failed or returned empty
+      if (playersToExport.length === 0) {
+        playersToExport = allPlayers;
+      }
+
+      // If user checked specific players, export only those; otherwise export all
+      let targetList = playersToExport;
+      if (selectedIds.size > 0) {
+        const filtered = playersToExport.filter(p => selectedIds.has(p.id));
+        if (filtered.length > 0) {
+          targetList = filtered;
         }
       }
-    } catch (error) {
-      console.warn('API fetch during CSV export failed, using state roster:', error);
-    }
 
-    // Seamless fallback to loaded state players if fetch failed or returned empty
-    if (playersToExport.length === 0) {
-      playersToExport = allPlayers;
-    }
-
-    // If user checked specific players, export only those; otherwise export all
-    let targetList = playersToExport;
-    if (selectedIds.size > 0) {
-      const filtered = playersToExport.filter(p => selectedIds.has(p.id));
-      if (filtered.length > 0) {
-        targetList = filtered;
+      if (targetList.length === 0) {
+        showToast('No player records found to export.', 'info');
+        return;
       }
+
+      const exportRes = await fetch('/api/admin/players/export', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ players: targetList })
+      });
+
+      if (!exportRes.ok) {
+        const errJson = await exportRes.json().catch(() => ({}));
+        throw new Error(errJson.error || 'Failed to generate Excel workbook');
+      }
+
+      const blob = await exportRes.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', objectUrl);
+      link.setAttribute('download', `CAL_Players_Export_${new Date().toISOString().slice(0, 10)}.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+      showToast(`Exported ${targetList.length} player(s) to Excel (.xlsx) successfully!`, 'success');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Could not export player list.';
+      showToast(message, 'error');
+    } finally {
+      setExporting(false);
     }
-
-    if (targetList.length === 0) {
-      showToast('No player records found to export.', 'info');
-      return;
-    }
-
-    const headers = [
-      'Registration ID',
-      'Full Name',
-      'Mobile Number',
-      'Email Address',
-      'Date of Birth',
-      'City',
-      'Full Address',
-      'Playing Role',
-      'Batting Style',
-      'Bowling Arm',
-      'Bowling Type',
-      'Experience Level',
-      'Played Previous Tournament',
-      'Previous Team Name',
-      'Previous Captain Name',
-      'Previous Tournament Name',
-      'Additional Notes',
-      'Emergency Contact Name',
-      'Emergency Relationship',
-      'Emergency Mobile',
-      'Registration Status',
-      'Review / Rejection Remarks',
-      'Payment Status',
-      'Amount Paid (INR)',
-      'Payment Method',
-      'UTR / Transaction ID',
-      'Payment Verified Date',
-      'Registered Date'
-    ];
-
-    const formatField = (str: string | null | undefined) => {
-      if (!str) return 'N/A';
-      return str.replace(/_/g, ' ').replace(/\b\w/g, letter => letter.toUpperCase());
-    };
-
-    const rows = targetList.map(p => [
-      p.registration_id || '',
-      p.full_name || '',
-      p.mobile || '',
-      p.email || '',
-      p.date_of_birth ? formatDate(p.date_of_birth) : '',
-      p.city || '',
-      p.address || '',
-      formatField(p.playing_role),
-      formatField(p.batting_style),
-      formatField(p.bowling_arm),
-      formatField(p.bowling_type),
-      formatField(p.experience_level),
-      p.previous_tournament ? 'Yes' : 'No',
-      p.previous_team_name || 'N/A',
-      p.previous_captain_name || 'N/A',
-      p.previous_tournament_name || 'N/A',
-      p.additional_information || 'N/A',
-      p.emergency_contact_name || 'N/A',
-      p.emergency_relationship || 'N/A',
-      p.emergency_mobile || 'N/A',
-      formatField(p.registration_status),
-      p.rejection_reason || p.payment?.rejection_reason || 'N/A',
-      p.payment?.payment_status ? formatField(p.payment.payment_status) : 'Unpaid',
-      p.payment?.amount != null ? p.payment.amount : 0,
-      p.payment?.payment_method ? formatField(p.payment.payment_method) : 'UPI',
-      p.payment?.utr_number ? `${p.payment.utr_number}` : 'N/A',
-      p.payment?.verified_at ? formatDate(p.payment.verified_at) : 'N/A',
-      p.created_at ? formatDate(p.created_at) : 'N/A'
-    ]);
-
-    const encodeCell = (value: unknown) => {
-      const text = value === null || value === undefined ? '' : String(value);
-      return `"${text.replace(/"/g, '""')}"`;
-    };
-
-    const csvContent =
-      '\uFEFF' +
-      [headers, ...rows].map(row => row.map(encodeCell).join(',')).join('\r\n');
-
-    const file = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const objectUrl = URL.createObjectURL(file);
-    const link = document.createElement('a');
-    link.setAttribute('href', objectUrl);
-    link.setAttribute('download', `CAL_Players_Full_Export_${new Date().toISOString().slice(0, 10)}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
-    showToast(`Exported ${targetList.length} player(s) successfully!`, 'success');
   };
 
   return (
@@ -866,14 +812,19 @@ export default function PlayersAdminPage() {
               </button>
             )}
 
-            {/* Export CSV */}
+            {/* Export Excel */}
             <button
-              onClick={exportPlayersCSV}
-              className="inline-flex items-center gap-1.5 h-8.5 px-2.5 rounded-lg bg-white hover:bg-slate-50 border border-slate-200 text-xs font-medium text-slate-700 transition-colors shadow-2xs"
-              title="Download all registered players as CSV"
+              onClick={exportPlayersExcel}
+              disabled={exporting}
+              className="inline-flex items-center gap-1.5 h-8.5 px-2.5 rounded-lg bg-white hover:bg-slate-50 border border-slate-200 text-xs font-medium text-slate-700 transition-colors shadow-2xs disabled:opacity-50"
+              title="Download registered players as an organized Excel (.xlsx) file"
             >
-              <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
-              <span>Export CSV</span>
+              {exporting ? (
+                <Loader2 className="w-3.5 h-3.5 text-emerald-600 animate-spin" />
+              ) : (
+                <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
+              )}
+              <span>{exporting ? 'Exporting...' : 'Export Excel'}</span>
             </button>
 
             {/* Refresh */}

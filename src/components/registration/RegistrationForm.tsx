@@ -77,20 +77,9 @@ export default function RegistrationForm({ settings: propSettings, initialSettin
     setMounted(true);
     let isMounted = true;
 
-    // Check localStorage first for instant client-side persistence
-    if (typeof window !== 'undefined') {
-      try {
-        const local = localStorage.getItem('cal_tournament_settings');
-        if (local) {
-          const parsed = JSON.parse(local);
-          setSettings(prev => ({ ...prev, ...parsed }));
-        }
-      } catch (e) {}
-    }
-
     async function refreshSettings() {
       try {
-        const res = await fetch('/api/public/settings', { cache: 'no-store' });
+        const res = await fetch(`/api/public/settings?t=${Date.now()}`, { cache: 'no-store' });
         const json = await res.json();
         if (isMounted && json.success && json.data) {
           // Server database is the single source of truth
@@ -100,7 +89,7 @@ export default function RegistrationForm({ settings: propSettings, initialSettin
           } catch (e) {}
         }
       } catch (err) {
-        // Fallback to initial settings
+        // Fallback to initial settings from SSR
       }
     }
     refreshSettings();
@@ -109,7 +98,7 @@ export default function RegistrationForm({ settings: propSettings, initialSettin
       if (e.key === 'cal_tournament_settings' && e.newValue) {
         try {
           const parsed = JSON.parse(e.newValue);
-          setSettings(parsed);
+          setSettings(prev => ({ ...prev, ...parsed }));
         } catch (err) {}
       }
     };
@@ -355,11 +344,13 @@ export default function RegistrationForm({ settings: propSettings, initialSettin
   };
 
   const now = new Date();
-  const startDate = settings.registration_start_date ? new Date(settings.registration_start_date) : null;
-  const endDate = settings.registration_end_date ? new Date(settings.registration_end_date) : null;
+  const parsedStart = settings.registration_start_date ? new Date(settings.registration_start_date) : null;
+  const parsedEnd = settings.registration_end_date ? new Date(settings.registration_end_date) : null;
+  const startDate = parsedStart && !isNaN(parsedStart.getTime()) ? parsedStart : null;
+  const endDate = parsedEnd && !isNaN(parsedEnd.getTime()) ? parsedEnd : null;
 
-  const isBeforeStart = startDate && now < startDate;
-  const isAfterEnd = endDate && now > endDate;
+  const isBeforeStart = Boolean(startDate && now < startDate);
+  const isAfterEnd = Boolean(endDate && now > endDate);
 
   const formatDate = (date: Date) => {
     return date.toLocaleDateString('en-IN', {
@@ -393,7 +384,7 @@ export default function RegistrationForm({ settings: propSettings, initialSettin
   }
 
   // 2. If registration date has not started yet
-  if (isBeforeStart) {
+  if (isBeforeStart && startDate) {
     return (
       <div className="bg-white border border-brand-border rounded-2xl p-8 text-center max-w-xl mx-auto my-12 shadow-sm space-y-4">
         <div className="w-16 h-16 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center mx-auto">
@@ -423,7 +414,7 @@ export default function RegistrationForm({ settings: propSettings, initialSettin
   }
 
   // 3. If registration deadline has passed
-  if (isAfterEnd) {
+  if (isAfterEnd && endDate) {
     return (
       <div className="bg-white border border-brand-border rounded-2xl p-8 text-center max-w-xl mx-auto my-12 shadow-sm space-y-4">
         <div className="w-16 h-16 rounded-full bg-red-50 text-red-600 flex items-center justify-center mx-auto">

@@ -91,80 +91,65 @@ export default function TournamentSettingsPage() {
     }
   };
 
-  const fetchSettings = async () => {
-    // 1. Immediately hydrate from localStorage if present
-    let hasLocal = false;
-    if (typeof window !== 'undefined') {
-      try {
-        const local = localStorage.getItem('cal_tournament_settings');
-        if (local) {
-          const parsed = JSON.parse(local);
-          hasLocal = true;
-          if (parsed.tournament_name) setTournamentName(parsed.tournament_name);
-          if (parsed.registration_fee !== undefined) setRegistrationFee(parsed.registration_fee);
-          if (parsed.upi_id) setUpiId(parsed.upi_id);
-          if (parsed.maximum_player_capacity !== undefined) setCapacity(parsed.maximum_player_capacity);
-          if (parsed.registration_open !== undefined) setRegistrationOpen(parsed.registration_open);
-          if (parsed.registration_instructions) setInstructions(parsed.registration_instructions);
-          if (parsed.upi_qr_path) setUpiQrPath(parsed.upi_qr_path);
-          if (parsed.registration_start_date) setStartDate(parsed.registration_start_date.substring(0, 16));
-          if (parsed.registration_end_date) setEndDate(parsed.registration_end_date.substring(0, 16));
-          if (parsed.banner_image_path) setBannerPath(parsed.banner_image_path);
-          if (parsed.banner_title) setBannerTitle(parsed.banner_title);
-          if (parsed.banner_subtitle) setBannerSubtitle(parsed.banner_subtitle);
-          if (parsed.banner_enabled !== undefined) setBannerEnabled(parsed.banner_enabled);
-          if (parsed.support_phone) setSupportPhone(parsed.support_phone);
-          if (parsed.support_whatsapp) setSupportWhatsapp(parsed.support_whatsapp);
-          if (parsed.support_email) setSupportEmail(parsed.support_email);
-        }
-      } catch (e) {}
+  const applySettingsToForm = (d: Partial<TournamentSettingsRow>) => {
+    if (d.tournament_name) setTournamentName(d.tournament_name);
+    if (d.registration_fee !== undefined) setRegistrationFee(d.registration_fee);
+    if (d.upi_id) setUpiId(d.upi_id);
+    if (d.maximum_player_capacity !== undefined) setCapacity(d.maximum_player_capacity);
+    if (d.registration_open !== undefined) setRegistrationOpen(d.registration_open);
+    if (d.registration_instructions !== undefined) setInstructions(d.registration_instructions || '');
+    if (d.upi_qr_path !== undefined) setUpiQrPath(d.upi_qr_path || null);
+
+    // Schedule dates format to datetime-local compatible (YYYY-MM-DDTHH:mm) in local timezone
+    if (d.registration_start_date) {
+      setStartDate(toLocalInputString(d.registration_start_date));
+    }
+    if (d.registration_end_date) {
+      setEndDate(toLocalInputString(d.registration_end_date));
     }
 
+    // Banner fields
+    if (d.banner_image_path) setBannerPath(d.banner_image_path);
+    if (d.banner_title) setBannerTitle(d.banner_title);
+    if (d.banner_subtitle) setBannerSubtitle(d.banner_subtitle);
+    if (d.banner_enabled !== undefined) setBannerEnabled(d.banner_enabled);
+
+    // Support contacts
+    if (d.support_phone) setSupportPhone(d.support_phone);
+    if (d.support_whatsapp) setSupportWhatsapp(d.support_whatsapp);
+    if (d.support_email) setSupportEmail(d.support_email);
+  };
+
+  const fetchSettings = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/admin/settings', { cache: 'no-store' });
+      const res = await fetch(`/api/admin/settings?t=${Date.now()}`, { cache: 'no-store' });
       const json = await res.json();
       if (json.success && json.data) {
         const d: TournamentSettingsRow = json.data;
         setSettings(d);
+        applySettingsToForm(d);
 
-        // Always update form state with the latest server database values
-        if (d.tournament_name) setTournamentName(d.tournament_name);
-        if (d.registration_fee !== undefined) setRegistrationFee(d.registration_fee);
-        if (d.upi_id) setUpiId(d.upi_id);
-        if (d.maximum_player_capacity !== undefined) setCapacity(d.maximum_player_capacity);
-        if (d.registration_open !== undefined) setRegistrationOpen(d.registration_open);
-        if (d.registration_instructions !== undefined) setInstructions(d.registration_instructions || '');
-        if (d.upi_qr_path !== undefined) setUpiQrPath(d.upi_qr_path || null);
-
-        // Schedule dates format to datetime-local compatible (YYYY-MM-DDTHH:mm)
-        if (d.registration_start_date) {
-          setStartDate(toLocalInputString(d.registration_start_date));
-        }
-        if (d.registration_end_date) {
-          setEndDate(toLocalInputString(d.registration_end_date));
-        }
-
-        // Banner fields
-        if (d.banner_image_path) setBannerPath(d.banner_image_path);
-        if (d.banner_title) setBannerTitle(d.banner_title);
-        if (d.banner_subtitle) setBannerSubtitle(d.banner_subtitle);
-        if (d.banner_enabled !== undefined) setBannerEnabled(d.banner_enabled);
-
-        // Support contacts
-        if (d.support_phone) setSupportPhone(d.support_phone);
-        if (d.support_whatsapp) setSupportWhatsapp(d.support_whatsapp);
-        if (d.support_email) setSupportEmail(d.support_email);
-
-        // Keep localStorage in sync with database truth
+        // Keep localStorage in sync with database truth only after fresh fetch
         try {
           localStorage.setItem('cal_tournament_settings', JSON.stringify(d));
         } catch (e) {}
+        return;
       }
     } catch (err) {
       console.error('Failed to load settings:', err);
     } finally {
       setLoading(false);
+    }
+
+    // Fallback to localStorage only if server fetch failed
+    if (typeof window !== 'undefined') {
+      try {
+        const local = localStorage.getItem('cal_tournament_settings');
+        if (local) {
+          applySettingsToForm(JSON.parse(local));
+        }
+      } catch (e) {}
     }
   };
 
@@ -268,6 +253,25 @@ export default function TournamentSettingsPage() {
     setFeedback(null);
 
     try {
+      const parsedStart = startDate ? new Date(startDate) : null;
+      const parsedEnd = endDate ? new Date(endDate) : null;
+
+      if (parsedStart && isNaN(parsedStart.getTime())) {
+        setFeedback({ type: 'error', message: 'Invalid Registration Start Date & Time.' });
+        return;
+      }
+      if (parsedEnd && isNaN(parsedEnd.getTime())) {
+        setFeedback({ type: 'error', message: 'Invalid Registration End Date & Time (Deadline).' });
+        return;
+      }
+      if (parsedStart && parsedEnd && parsedEnd <= parsedStart) {
+        setFeedback({
+          type: 'error',
+          message: 'Registration End Date (Deadline) must be after the Start Date.'
+        });
+        return;
+      }
+
       const payload = {
         tournament_name: tournamentName.trim(),
         registration_fee: Number(registrationFee),
@@ -276,8 +280,8 @@ export default function TournamentSettingsPage() {
         registration_open: registrationOpen,
         registration_instructions: instructions.trim(),
         upi_qr_path: upiQrPath,
-        registration_start_date: startDate ? new Date(startDate).toISOString() : null,
-        registration_end_date: endDate ? new Date(endDate).toISOString() : null,
+        registration_start_date: parsedStart ? parsedStart.toISOString() : null,
+        registration_end_date: parsedEnd ? parsedEnd.toISOString() : null,
         banner_image_path: bannerPath,
         banner_title: bannerTitle.trim() || tournamentName.trim(),
         banner_subtitle: bannerSubtitle.trim(),
@@ -287,12 +291,6 @@ export default function TournamentSettingsPage() {
         support_email: supportEmail.trim()
       };
 
-      if (typeof window !== 'undefined') {
-        try {
-          localStorage.setItem('cal_tournament_settings', JSON.stringify(payload));
-        } catch (e) {}
-      }
-
       const res = await fetch('/api/admin/settings', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -300,10 +298,20 @@ export default function TournamentSettingsPage() {
       });
 
       const json = await res.json();
-      if (res.ok && json.success) {
+      if (res.ok && json.success && json.data) {
+        const savedData: TournamentSettingsRow = json.data;
+        setSettings(savedData);
+        applySettingsToForm(savedData);
+
+        if (typeof window !== 'undefined') {
+          try {
+            localStorage.setItem('cal_tournament_settings', JSON.stringify(savedData));
+          } catch (e) {}
+        }
+
         setFeedback({
           type: 'success',
-          message: 'Tournament schedule, banner & settings updated successfully across live website!'
+          message: 'Tournament schedule, banner & settings saved to database and synced across live website!'
         });
       } else {
         setFeedback({ type: 'error', message: json.error || 'Failed to update settings' });
@@ -319,9 +327,9 @@ export default function TournamentSettingsPage() {
   const now = new Date();
   const startObj = startDate ? new Date(startDate) : null;
   const endObj = endDate ? new Date(endDate) : null;
-  const isBeforeStart = startObj && now < startObj;
-  const isAfterEnd = endObj && now > endObj;
-  const isScheduleActive = (!isBeforeStart && !isAfterEnd);
+  const isBeforeStart = Boolean(startObj && !isNaN(startObj.getTime()) && now < startObj);
+  const isAfterEnd = Boolean(endObj && !isNaN(endObj.getTime()) && now > endObj);
+  const isScheduleActive = !isBeforeStart && !isAfterEnd;
 
   if (loading) {
     return (
@@ -781,7 +789,7 @@ export default function TournamentSettingsPage() {
                   <input
                     type="number"
                     min={0}
-                    step={50}
+                    step={1}
                     required
                     value={registrationFee}
                     onChange={e => setRegistrationFee(Number(e.target.value))}
