@@ -34,6 +34,28 @@ export default function PaymentsAdminPage() {
   const [actionLoading, setActionLoading] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
+  const openPaymentScreenshot = async (payment: PaymentWithPlayer) => {
+    if (!payment.screenshot_path) return;
+    try {
+      const response = await fetch('/api/admin/payments/receipt-url', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ screenshotPath: payment.screenshot_path })
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success || typeof result.url !== 'string') {
+        throw new Error(result.error || 'Could not load payment receipt');
+      }
+      setPreviewScreenshot({
+        url: result.url,
+        utr: payment.utr_number,
+        player: payment.player.full_name
+      });
+    } catch (err: any) {
+      setFeedback({ type: 'error', message: err?.message || 'Failed to load payment screenshot' });
+    }
+  };
+
   const fetchPayments = async () => {
     setLoading(true);
     try {
@@ -316,13 +338,7 @@ export default function PaymentsAdminPage() {
                 <div>
                   <button
                     type="button"
-                    onClick={() =>
-                      setPreviewScreenshot({
-                        url: payment.screenshot_path,
-                        utr: payment.utr_number,
-                        player: payment.player.full_name
-                      })
-                    }
+                    onClick={() => openPaymentScreenshot(payment)}
                     className="w-full h-10 rounded-lg border border-brand-border bg-gray-50 hover:bg-gray-100 text-xs font-semibold text-brand-dark flex items-center justify-center gap-1.5 transition-colors"
                   >
                     <Eye className="w-3.5 h-3.5 text-primary-green" />

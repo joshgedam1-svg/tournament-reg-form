@@ -423,12 +423,13 @@ export default function PlayersAdminPage() {
 
       const json = await res.json();
       if (res.ok && json.success) {
+        const updatedPlayer: PlayerWithPayment = json.data || ({ ...editingPlayer, ...editForm } as PlayerWithPayment);
         showToast(`Profile for ${editForm.full_name} updated successfully!`);
         setAllPlayers(prev =>
-          prev.map(p => (p.id === editingPlayer.id ? ({ ...p, ...editForm } as PlayerWithPayment) : p))
+          prev.map(p => (p.id === editingPlayer.id ? updatedPlayer : p))
         );
         if (selectedPlayer?.id === editingPlayer.id) {
-          setSelectedPlayer(prev => (prev ? ({ ...prev, ...editForm } as PlayerWithPayment) : null));
+          setSelectedPlayer(updatedPlayer);
         }
         setEditingPlayer(null);
       } else {

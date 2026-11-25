@@ -3,6 +3,9 @@ import { getAdminClient } from '@/lib/supabase/admin';
 import { mockStore } from '@/lib/mockStore';
 import { PlayerWithPayment } from '@/types/player';
 
+const toValidUuid = (val?: string | null): string | null =>
+  val && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val) ? val : null;
+
 export const playerService = {
   async getPlayers(filter?: { status?: string; role?: string; search?: string }): Promise<PlayerWithPayment[]> {
     if (isSupabaseConfigured()) {
@@ -92,19 +95,20 @@ export const playerService = {
           .single();
 
         if (!error && data) {
+          const validAdminUuid = toValidUuid(adminId);
           // Synchronize payment status to 'verified'
           await supabase
             .from('payments')
             .update({
               payment_status: 'verified',
-              verified_by: adminId !== 'admin' ? adminId : null,
+              verified_by: validAdminUuid,
               verified_at: new Date().toISOString(),
               updated_at: new Date().toISOString()
             } as any)
             .eq('player_id', id);
 
           await supabase.from('admin_activity_logs').insert({
-            admin_id: adminId !== 'admin' ? adminId : null,
+            admin_id: validAdminUuid,
             action: 'registration_approved',
             entity_type: 'player',
             entity_id: id,
@@ -197,18 +201,53 @@ export const playerService = {
           .single();
 
         if (!error && data) {
+          const validAdminUuid = toValidUuid(adminId);
+          const p = data as any;
+          let payment = p.payments?.[0] || null;
+
+          // Keep payment_status synchronized when registration_status is changed via Edit
+          if (updates.registration_status === 'approved') {
+            await supabase
+              .from('payments')
+              .update({
+                payment_status: 'verified',
+                verified_by: validAdminUuid,
+                verified_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+              } as any)
+              .eq('player_id', id);
+            if (payment) payment = { ...payment, payment_status: 'verified' };
+          } else if (updates.registration_status === 'rejected') {
+            await supabase
+              .from('payments')
+              .update({
+                payment_status: 'rejected',
+                updated_at: new Date().toISOString()
+              } as any)
+              .eq('player_id', id);
+            if (payment) payment = { ...payment, payment_status: 'rejected' };
+          } else if (updates.registration_status === 'under_review') {
+            await supabase
+              .from('payments')
+              .update({
+                payment_status: 'pending_verification',
+                updated_at: new Date().toISOString()
+              } as any)
+              .eq('player_id', id);
+            if (payment) payment = { ...payment, payment_status: 'pending_verification' };
+          }
+
           await supabase.from('admin_activity_logs').insert({
-            admin_id: adminId !== 'admin' ? adminId : null,
+            admin_id: validAdminUuid,
             action: 'player_details_updated',
             entity_type: 'player',
             entity_id: id,
             new_values: updates
           } as any);
 
-          const p = data as any;
           return {
             ...p,
-            payment: p.payments?.[0] || null
+            payment
           } as PlayerWithPayment;
         }
       } catch (err) {
@@ -288,7 +327,7 @@ export const playerService = {
               entity_type: 'player',
               entity_id: id
             } as any);
-          } catch (_) {}
+          } catch (_) { }
         }
       } catch (err) {
         console.error('Supabase deletePlayer error:', err);
@@ -315,7 +354,7 @@ export const playerService = {
               entity_id: null,
               old_values: { count: validUuids.length, ids: validUuids }
             } as any);
-          } catch (_) {}
+          } catch (_) { }
         }
       } catch (err) {
         console.error('Supabase deletePlayers error:', err);
@@ -339,7 +378,7 @@ export const playerService = {
             entity_type: 'player',
             entity_id: null
           } as any);
-        } catch (_) {}
+        } catch (_) { }
       } catch (err) {
         console.error('Supabase deleteAllPlayers error:', err);
       }

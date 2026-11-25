@@ -51,8 +51,22 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const path = getStoragePath(body?.screenshotPath);
+    const rawPath = typeof body?.screenshotPath === 'string' ? body.screenshotPath.trim() : '';
+    if (!rawPath) {
+      return NextResponse.json({ error: 'Invalid payment receipt path.' }, { status: 400 });
+    }
+
+    // Support inline base64 data URLs or local /uploads paths directly
+    if (rawPath.startsWith('data:image/') || rawPath.startsWith('/uploads/')) {
+      return NextResponse.json({ success: true, url: rawPath });
+    }
+
+    const path = getStoragePath(rawPath);
     if (!path) {
+      // If it's already a full http(s) URL (e.g. from an external/previous bucket), return it directly
+      if (/^https?:\/\//i.test(rawPath)) {
+        return NextResponse.json({ success: true, url: rawPath });
+      }
       return NextResponse.json({ error: 'Invalid payment receipt path.' }, { status: 400 });
     }
 
@@ -61,11 +75,25 @@ export async function POST(req: NextRequest) {
       .from('payment-screenshots')
       .createSignedUrl(path, 10 * 60);
 
-    if (error || !data?.signedUrl) {
-      return NextResponse.json({ error: 'Could not access this receipt. The file may be missing.' }, { status: 404 });
+    if (!error && data?.signedUrl) {
+      return NextResponse.json({ success: true, url: data.signedUrl });
     }
 
-    return NextResponse.json({ success: true, url: data.signedUrl });
+    // Fallback: if the input was already a full public URL (e.g. from a previous project), return it
+    if (/^https?:\/\//i.test(rawPath) && rawPath.includes('/storage/v1/object/public/')) {
+      return NextResponse.json({ success: true, url: rawPath });
+    }
+
+    // Fallback: try public URL on current bucket
+    const { data: publicData } = supabase.storage
+      .from('payment-screenshots')
+      .getPublicUrl(path);
+
+    if (publicData?.publicUrl) {
+      return NextResponse.json({ success: true, url: publicData.publicUrl });
+    }
+
+    return NextResponse.json({ error: 'Could not access this receipt. The file may be missing.' }, { status: 404 });
   } catch (error) {
     console.error('Receipt URL generation failed:', error);
     return NextResponse.json({ error: 'Could not prepare the payment receipt.' }, { status: 500 });
