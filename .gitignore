@@ -42,3 +42,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+/.local-backups/
+/supabase-export-2026-11-24/
+.vercel

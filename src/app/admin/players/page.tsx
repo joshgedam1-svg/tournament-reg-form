@@ -108,6 +108,13 @@ export default function PlayersAdminPage() {
     amount: number;
   } | null>(null);
 
+  // Player Profile Photo Preview Modal
+  const [previewingProfilePlayer, setPreviewingProfilePlayer] = useState<PlayerWithPayment | null>(null);
+
+  const getPlayerPhotoUrl = (player: PlayerWithPayment) =>
+    player.profile_photo_path ||
+    'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80';
+
   const [entryFee, setEntryFee] = useState<number>(200);
 
   // Form States
@@ -982,14 +989,18 @@ export default function PlayersAdminPage() {
                   className="bg-white border border-amber-200/90 rounded-xl p-3 shadow-2xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 hover:border-amber-400 transition-colors"
                 >
                   <div className="flex items-start gap-2.5 min-w-0">
-                    <img
-                      src={
-                        p.profile_photo_path ||
-                        'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80'
-                      }
-                      alt={p.full_name}
-                      className="w-10 h-10 rounded-lg object-cover border border-slate-200 shrink-0"
-                    />
+                    <button
+                      type="button"
+                      onClick={() => setPreviewingProfilePlayer(p)}
+                      className="shrink-0 rounded-lg overflow-hidden border border-slate-200 hover:ring-2 hover:ring-primary-green transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-green"
+                      title="Tap to preview profile photo"
+                    >
+                      <img
+                        src={getPlayerPhotoUrl(p)}
+                        alt={p.full_name}
+                        className="w-10 h-10 object-cover"
+                      />
+                    </button>
                     <div className="min-w-0">
                       <div className="flex items-center gap-1.5">
                         <span className="font-bold text-xs text-slate-900 truncate">{p.full_name}</span>
@@ -1203,14 +1214,18 @@ export default function PlayersAdminPage() {
                         onChange={() => toggleSelectOne(player.id)}
                         className="w-4 h-4 accent-primary-green rounded cursor-pointer shrink-0"
                       />
-                      <img
-                        src={
-                          player.profile_photo_path ||
-                          'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80'
-                        }
-                        alt={player.full_name}
-                        className="w-9 h-9 rounded-lg object-cover border border-slate-200 shrink-0"
-                      />
+                      <button
+                        type="button"
+                        onClick={() => setPreviewingProfilePlayer(player)}
+                        className="shrink-0 rounded-lg overflow-hidden border border-slate-200 hover:ring-2 hover:ring-primary-green transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-green"
+                        title="Tap to preview profile photo"
+                      >
+                        <img
+                          src={getPlayerPhotoUrl(player)}
+                          alt={player.full_name}
+                          className="w-9 h-9 object-cover"
+                        />
+                      </button>
                       <div className="min-w-0">
                         <h3 className="font-bold text-xs text-slate-900 truncate">{player.full_name}</h3>
                         <span className="font-mono text-[11px] font-bold text-primary-green block">
@@ -1370,14 +1385,18 @@ export default function PlayersAdminPage() {
 
                         <td className="py-2.5 px-3 whitespace-nowrap">
                           <div className="flex items-center gap-2.5">
-                            <img
-                              src={
-                                player.profile_photo_path ||
-                                'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80'
-                              }
-                              alt={player.full_name}
-                              className="w-8 h-8 rounded-lg object-cover border border-slate-200 shrink-0"
-                            />
+                            <button
+                              type="button"
+                              onClick={() => setPreviewingProfilePlayer(player)}
+                              className="shrink-0 rounded-lg overflow-hidden border border-slate-200 hover:ring-2 hover:ring-primary-green transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-green"
+                              title="Tap to preview profile photo"
+                            >
+                              <img
+                                src={getPlayerPhotoUrl(player)}
+                                alt={player.full_name}
+                                className="w-8 h-8 object-cover"
+                              />
+                            </button>
                             <div>
                               <span className="font-semibold text-xs text-slate-900 block whitespace-nowrap">
                                 {player.full_name}
@@ -2140,14 +2159,18 @@ export default function PlayersAdminPage() {
             {/* Header */}
             <div className="flex items-start justify-between pb-2.5 border-b border-slate-100">
               <div className="flex items-center gap-3">
-                <img
-                  src={
-                    selectedPlayer.profile_photo_path ||
-                    'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80'
-                  }
-                  alt={selectedPlayer.full_name}
-                  className="w-11 h-11 rounded-lg object-cover border border-slate-200"
-                />
+                <button
+                  type="button"
+                  onClick={() => setPreviewingProfilePlayer(selectedPlayer)}
+                  className="shrink-0 rounded-lg overflow-hidden border border-slate-200 hover:ring-2 hover:ring-primary-green transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-green"
+                  title="Tap to preview profile photo"
+                >
+                  <img
+                    src={getPlayerPhotoUrl(selectedPlayer)}
+                    alt={selectedPlayer.full_name}
+                    className="w-11 h-11 object-cover"
+                  />
+                </button>
                 <div>
                   <h3 className="font-bold text-sm text-slate-900">{selectedPlayer.full_name}</h3>
                   <div className="flex items-center gap-2 mt-0.5">
@@ -2379,6 +2402,80 @@ export default function PlayersAdminPage() {
                 <CheckCircle2 className="w-3.5 h-3.5" />
                 <span>Verify Payment & Approve</span>
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* ============================================================================== */}
+      {/* MODAL 9: PLAYER PROFILE PHOTO PREVIEW MODAL */}
+      {/* ============================================================================== */}
+      {previewingProfilePlayer && (
+        <div
+          className="fixed inset-0 z-[60] bg-black/70 backdrop-blur-xs flex items-center justify-center p-4"
+          onClick={() => setPreviewingProfilePlayer(null)}
+        >
+          <div
+            className="bg-white rounded-2xl max-w-md w-full p-4 space-y-3 shadow-2xl border border-slate-200 animate-in zoom-in-95 duration-150"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+              <div className="min-w-0">
+                <h3 className="font-bold text-sm text-slate-900 truncate">
+                  {previewingProfilePlayer.full_name}
+                </h3>
+                <div className="flex items-center gap-2 text-[11px] text-slate-500">
+                  <span className="font-mono font-bold text-primary-green">
+                    {previewingProfilePlayer.registration_id}
+                  </span>
+                  <span>•</span>
+                  <span className="capitalize">
+                    {previewingProfilePlayer.playing_role.replace('_', ' ')}
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPreviewingProfilePlayer(null)}
+                className="p-1.5 rounded-md text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="relative w-full max-h-[60vh] overflow-hidden rounded-xl border border-slate-200 bg-slate-100 flex items-center justify-center p-2">
+              <img
+                src={getPlayerPhotoUrl(previewingProfilePlayer)}
+                alt={previewingProfilePlayer.full_name}
+                className="max-h-[55vh] w-auto object-contain rounded-lg shadow-sm"
+              />
+            </div>
+
+            <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-100 text-xs">
+              <span className="text-slate-500 truncate">
+                {previewingProfilePlayer.city} • {previewingProfilePlayer.mobile}
+              </span>
+              <div className="flex items-center gap-2 shrink-0">
+                {!selectedPlayer && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const target = previewingProfilePlayer;
+                      setPreviewingProfilePlayer(null);
+                      setSelectedPlayer(target);
+                    }}
+                    className="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                  >
+                    Full Details
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setPreviewingProfilePlayer(null)}
+                  className="px-3.5 py-1.5 rounded-lg bg-primary-green hover:bg-primary-dark text-white text-xs font-bold"
+                >
+                  Close
+                </button>
+              </div>
             </div>
           </div>
         </div>
