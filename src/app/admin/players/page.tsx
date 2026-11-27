@@ -647,48 +647,19 @@ export default function PlayersAdminPage() {
     setExporting(true);
 
     try {
-      let playersToExport: PlayerWithPayment[] = [];
-      try {
-        const response = await fetch('/api/admin/players', { cache: 'no-store' });
-        if (response.ok) {
-          const result = await response.json();
-          if (result.success && Array.isArray(result.data) && result.data.length > 0) {
-            playersToExport = result.data;
-            setAllPlayers(playersToExport);
-          }
-        }
-      } catch (error) {
-        console.warn('API fetch during Excel export failed, using state roster:', error);
-      }
+      const selectedIdList = Array.from(selectedIds);
+      const exportCount = selectedIdList.length > 0 ? selectedIdList.length : allPlayers.length;
 
-      // Seamless fallback to loaded state players if fetch failed or returned empty
-      if (playersToExport.length === 0) {
-        playersToExport = allPlayers;
-      }
-
-      // If user checked specific players, export only those; otherwise export all
-      let targetList = playersToExport;
-      if (selectedIds.size > 0) {
-        const filtered = playersToExport.filter(p => selectedIds.has(p.id));
-        if (filtered.length > 0) {
-          targetList = filtered;
-        }
-      }
-
-      if (targetList.length === 0) {
-        showToast('No player records found to export.', 'info');
-        return;
-      }
-
+      // Send only selected IDs (not full player objects with base64 photos) to stay well under Vercel's 4.5 MB request limit
       const exportRes = await fetch('/api/admin/players/export', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ players: targetList })
+        body: JSON.stringify(selectedIdList.length > 0 ? { ids: selectedIdList } : {})
       });
 
       if (!exportRes.ok) {
         const errJson = await exportRes.json().catch(() => ({}));
-        throw new Error(errJson.error || 'Failed to generate Excel workbook');
+        throw new Error(errJson.error || `Failed to generate Excel workbook (HTTP ${exportRes.status})`);
       }
 
       const blob = await exportRes.blob();
@@ -700,7 +671,12 @@ export default function PlayersAdminPage() {
       link.click();
       document.body.removeChild(link);
       window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
-      showToast(`Exported ${targetList.length} player(s) to Excel (.xlsx) successfully!`, 'success');
+      showToast(
+        exportCount > 0
+          ? `Exported ${exportCount} player(s) to Excel (.xlsx) successfully!`
+          : 'Exported player list to Excel (.xlsx) successfully!',
+        'success'
+      );
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Could not export player list.';
       showToast(message, 'error');
