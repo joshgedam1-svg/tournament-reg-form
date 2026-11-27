@@ -11,7 +11,7 @@ export const playerService = {
     if (isSupabaseConfigured()) {
       try {
         const supabase = getAdminClient();
-        let query = supabase.from('players').select('*, payments(*)').order('created_at', { ascending: false });
+        let query = supabase.from('players').select('*, payments(*)').order('created_at', { ascending: true });
 
         if (filter?.role) {
           query = query.eq('playing_role', filter.role);
